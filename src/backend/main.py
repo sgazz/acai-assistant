@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from llm_client import llm_client
 from supabase_client import supabase
+from rag_client import RAGClient
 
 app = FastAPI()
 
@@ -20,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Inicijalizacija RAG klijenta
+rag_client = RAGClient()
 
 class ChatMessage(BaseModel):
     message: str
@@ -80,13 +84,42 @@ async def chat(message: ChatMessage):
         Odgovaraj na srpskom jeziku, jasno i koncizno.
         Fokusiraj se na pružanje praktičnih saveta i konkretnih primera."""
         
+        # Dobavljanje relevantnog konteksta iz RAG sistema
+        context = rag_client.get_context_for_query(message.message)
+        
+        # Dodavanje konteksta u prompt ako postoji
+        enhanced_prompt = message.message
+        if context:
+            enhanced_prompt = f"""Kontekst iz dokumentacije:
+            {context}
+            
+            Korisničko pitanje: {message.message}"""
+        
         # Generisanje odgovora preko Ollama
         response = await llm_client.generate_response(
-            prompt=message.message,
+            prompt=enhanced_prompt,
             system_prompt=system_prompt
         )
         
         return ChatResponse(response=response)
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/documents/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """Endpoint za upload dokumenata"""
+    try:
+        result = await rag_client.process_document(file)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/search")
+async def search_documents(query: str, k: int = 3):
+    """Endpoint za pretragu dokumenata"""
+    try:
+        results = rag_client.search_documents(query, k)
+        return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

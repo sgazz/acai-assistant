@@ -3,8 +3,14 @@
 # Funkcija za proveru da li je port zauzet
 check_port() {
     if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null ; then
-        echo "Port $1 je već zauzet!"
-        return 1
+        echo "Port $1 je zauzet. Pokušavam da ga oslobodim..."
+        lsof -ti :$1 | xargs kill -9 2>/dev/null
+        sleep 2
+        if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null ; then
+            echo "Nije moguće osloboditi port $1!"
+            return 1
+        fi
+        echo "Port $1 je oslobođen."
     fi
     return 0
 }

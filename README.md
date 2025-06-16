@@ -27,7 +27,7 @@ acai-assistant/
 └── ACAI_Assistant.command # Desktop ikonica za macOS
 ```
 
-## Pokretanje aplikacije
+## Podešavanje
 1. Klonirajte repozitorijum
 2. Instalirajte zavisnosti:
    ```bash
@@ -41,7 +41,20 @@ acai-assistant/
    cd src/frontend
    npm install
    ```
-3. Pokrenite aplikaciju:
+
+3. Podesite environment varijable:
+   ```bash
+   # U src/backend direktorijumu
+   cp .env.example .env
+   ```
+   Zatim uredite `.env` fajl i dodajte svoje vrednosti:
+   ```
+   SUPABASE_URL=your_supabase_url_here
+   SUPABASE_SERVICE_KEY=your_supabase_service_key_here
+   OLLAMA_BASE_URL=http://localhost:11434
+   ```
+
+4. Pokrenite aplikaciju:
    - Koristite `start_servers.sh` skriptu ili
    - Pokrenite `ACAI_Assistant.command` na macOS-u
 

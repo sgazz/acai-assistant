@@ -115,8 +115,19 @@ class RAGClient:
         """Pretražuje dokumente na osnovu upita"""
         return self.rag_service.search(query, k)
 
-    def get_context_for_query(self, query: str, k: int = 3) -> str:
+    def get_context_for_query(self, query: str, k: int = 3) -> Dict[str, Any]:
         """Dobavlja kontekst za upit koji će se koristiti sa LLM-om"""
         results = self.search_documents(query, k)
         context = "\n\n".join([doc["content"] for doc in results])
-        return context 
+        sources = [
+            {
+                "filename": doc["metadata"].get("source", "Unknown"),
+                "page_number": doc["metadata"].get("page", 0),
+                "content": doc["content"][:200] + "..." if len(doc["content"]) > 200 else doc["content"]  # Dodajemo kratak citat
+            }
+            for doc in results
+        ]
+        return {
+            "context": context,
+            "sources": sources
+        } 

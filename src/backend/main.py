@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import os
 from dotenv import load_dotenv
 from llm_client import llm_client
@@ -30,6 +30,7 @@ class ChatMessage(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    sources: Optional[List[Dict[str, Any]]] = None
 
 class MessageIn(BaseModel):
     content: str
@@ -93,7 +94,9 @@ async def chat(message: ChatMessage):
         Fokusiraj se na pružanje praktičnih saveta i konkretnih primera."""
         
         # Dobavljanje relevantnog konteksta iz RAG sistema
-        context = rag_client.get_context_for_query(message.message)
+        rag_result = rag_client.get_context_for_query(message.message)
+        context = rag_result["context"]
+        sources = rag_result["sources"]
         
         # Dodavanje konteksta u prompt ako postoji
         enhanced_prompt = message.message
@@ -109,7 +112,7 @@ async def chat(message: ChatMessage):
             system_prompt=system_prompt
         )
         
-        return ChatResponse(response=response)
+        return ChatResponse(response=response, sources=sources)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -11,7 +11,6 @@ import SchoolIcon from '@mui/icons-material/School';
 import ScienceIcon from '@mui/icons-material/Science';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsIcon from '@mui/icons-material/Settings';
-import DocumentUpload from './DocumentUpload';
 
 interface Chat {
   id: string;
@@ -193,22 +192,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
             </React.Fragment>
           ))}
         </List>
-      </Box>
-
-      <Divider />
-
-      <Box sx={{ p: 2 }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            color: 'text.secondary',
-            mb: 2,
-            px: 1,
-          }}
-        >
-          Podešavanja
-        </Typography>
-        <DocumentUpload />
       </Box>
 
       <Box 

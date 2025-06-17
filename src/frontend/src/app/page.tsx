@@ -1,19 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, IconButton, Drawer, useMediaQuery, useTheme } from '@mui/material';
+import { Box, IconButton, Drawer, useMediaQuery, useTheme, Tabs, Tab } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import ChatIcon from '@mui/icons-material/Chat';
+import DescriptionIcon from '@mui/icons-material/Description';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 import ChatInput from '../components/ChatInput';
+import DocumentList from '../components/DocumentList';
 
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   return (
@@ -102,8 +110,38 @@ export default function Home() {
               <MenuIcon />
             </IconButton>
           )}
-          <ChatWindow />
-          <ChatInput />
+
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Tab
+              icon={<ChatIcon />}
+              label="Chat"
+              iconPosition="start"
+              sx={{ minHeight: 64 }}
+            />
+            <Tab
+              icon={<DescriptionIcon />}
+              label="Dokumenti"
+              iconPosition="start"
+              sx={{ minHeight: 64 }}
+            />
+          </Tabs>
+
+          {activeTab === 0 ? (
+            <>
+              <ChatWindow />
+              <ChatInput />
+            </>
+          ) : (
+            <DocumentList />
+          )}
         </Box>
       </Box>
     </Box>

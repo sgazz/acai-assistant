@@ -42,6 +42,14 @@ class MessageOut(BaseModel):
     sender: str
     timestamp: str
 
+class Document(BaseModel):
+    id: str
+    filename: str
+    file_type: str
+    total_pages: int
+    status: str
+    created_at: Optional[str] = None
+
 @app.get("/")
 def read_root():
     return {"message": "ACAI Assistant backend radi!"}
@@ -106,6 +114,24 @@ async def chat(message: ChatMessage):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/documents", response_model=List[Document])
+async def get_documents():
+    """Endpoint za dohvatanje liste dokumenata"""
+    try:
+        response = supabase.table("documents").select("*").order("created_at", desc=True).execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/{document_id}/pages")
+async def get_document_pages(document_id: str):
+    """Endpoint za dohvatanje stranica dokumenta"""
+    try:
+        response = supabase.table("document_pages").select("*").eq("document_id", document_id).order("page_number").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/documents/upload")
 async def upload_document(file: UploadFile = File(...)):
     """Endpoint za upload dokumenata"""
@@ -121,5 +147,25 @@ async def search_documents(query: str, k: int = 3):
     try:
         results = rag_client.search_documents(query, k)
         return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/documents/{document_id}")
+async def delete_document(document_id: str):
+    """Endpoint za brisanje dokumenta"""
+    try:
+        # Prvo brišemo stranice dokumenta (cascade delete će se izvršiti automatski)
+        response = supabase.table("documents").delete().eq("id", document_id).execute()
+        return {"status": "success", "message": "Dokument uspešno obrisan"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/check-duplicate")
+async def check_duplicate_document(filename: str):
+    """Endpoint za proveru duplikata dokumenata"""
+    try:
+        response = supabase.table("documents").select("id").eq("filename", filename).execute()
+        is_duplicate = len(response.data) > 0
+        return {"isDuplicate": is_duplicate}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

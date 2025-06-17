@@ -12,6 +12,24 @@ export interface Message {
   timestamp: string;
 }
 
+export interface Document {
+  id: string;
+  filename: string;
+  file_type: string;
+  status: string;
+  created_at: string;
+  total_pages: number;
+  image_url?: string;
+}
+
+export interface DocumentPage {
+  id: string;
+  document_id: string;
+  page_number: number;
+  content: string;
+  image_url?: string;
+}
+
 export async function sendChatMessage(content: string): Promise<ApiResponse<{ response: string }>> {
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -67,6 +85,99 @@ export async function saveMessage(message: Omit<Message, 'id'>): Promise<ApiResp
     }
     const data = await response.json();
     return { data };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+    };
+  }
+}
+
+export async function fetchDocuments(): Promise<ApiResponse<Document[]>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Greška pri dohvatanju dokumenata');
+    }
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+    };
+  }
+}
+
+export async function fetchDocumentPages(documentId: string): Promise<ApiResponse<DocumentPage[]>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/document_pages/${documentId}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Greška pri dohvatanju stranica dokumenta');
+    }
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+    };
+  }
+}
+
+export async function uploadDocument(file: File): Promise<ApiResponse<Document>> {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Greška pri otpremanju dokumenta');
+    }
+
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+    };
+  }
+}
+
+export async function deleteDocument(documentId: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Greška pri brisanju dokumenta');
+    }
+
+    return { data: undefined };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Nepoznata greška',
+    };
+  }
+}
+
+export async function checkDuplicateDocument(filename: string): Promise<ApiResponse<boolean>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents/check-duplicate?filename=${encodeURIComponent(filename)}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Greška pri proveri duplikata');
+    }
+
+    const data = await response.json();
+    return { data: data.isDuplicate };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Nepoznata greška',

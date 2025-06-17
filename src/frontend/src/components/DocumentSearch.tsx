@@ -1,84 +1,173 @@
+'use client';
+
 import React, { useState } from 'react';
-import { Box, TextField, Button, CircularProgress } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Chip, Collapse, Fade } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
 import SearchResults from './SearchResults';
 
-interface SearchResult {
-  content: string;
-  metadata: {
-    source: string;
-    page?: number;
-    type: string;
-  };
-}
-
-const DocumentSearch: React.FC = () => {
+export default function DocumentSearch() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('relevance');
+  const [fileType, setFileType] = useState('all');
 
-  const handleSearch = async () => {
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!query.trim()) return;
 
-    setIsSearching(true);
-    setError(null);
-
+    setIsLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:8000/documents/search?query=${encodeURIComponent(query)}`
-      );
-      const data = await response.json();
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          sortBy,
+          fileType,
+        }),
+      });
 
-      if (response.ok) {
-        setResults(data.results);
-      } else {
-        setError(data.detail || 'Greška pri pretrazi dokumenata');
+      if (!response.ok) {
+        throw new Error('Greška pri pretrazi');
       }
+
+      const data = await response.json();
+      setResults(data.results);
     } catch (error) {
-      setError('Greška pri povezivanju sa serverom');
+      console.error('Greška:', error);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() ? 
+        <span key={i} style={{ backgroundColor: 'yellow', color: 'black' }}>{part}</span> : 
+        part
+    );
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Pretraži dokumente..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={isSearching}
-        />
-        <Button
-          variant="contained"
-          onClick={handleSearch}
-          disabled={isSearching || !query.trim()}
-          startIcon={isSearching ? <CircularProgress size={20} /> : <SearchIcon />}
-        >
-          {isSearching ? 'Pretraga...' : 'Pretraži'}
-        </Button>
-      </Box>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+      }}
+    >
+      <form onSubmit={handleSearch}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Pretraži dokumente..."
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
+                endAdornment: (
+                  <Tooltip title="Filtri">
+                    <IconButton 
+                      size="small"
+                      onClick={() => setShowFilters(!showFilters)}
+                      sx={{
+                        color: showFilters ? 'primary.main' : 'text.secondary',
+                      }}
+                    >
+                      <FilterListIcon />
+                    </IconButton>
+                  </Tooltip>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: 'background.default',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                },
+              }}
+            />
+            <Tooltip title="Pretraži">
+              <IconButton
+                type="submit"
+                color="primary"
+                disabled={!query.trim() || isLoading}
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
-      {error && (
-        <Box sx={{ color: 'error.main', mb: 2 }}>
-          {error}
+          <Collapse in={showFilters}>
+            <Fade in={showFilters}>
+              <Box sx={{ display: 'flex', gap: 2, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Sortiraj po</InputLabel>
+                  <Select
+                    value={sortBy}
+                    label="Sortiraj po"
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <MenuItem value="relevance">Relevantnosti</MenuItem>
+                    <MenuItem value="date">Datumu</MenuItem>
+                    <MenuItem value="name">Nazivu</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Tip fajla</InputLabel>
+                  <Select
+                    value={fileType}
+                    label="Tip fajla"
+                    onChange={(e) => setFileType(e.target.value)}
+                  >
+                    <MenuItem value="all">Svi tipovi</MenuItem>
+                    <MenuItem value="pdf">PDF</MenuItem>
+                    <MenuItem value="doc">Word</MenuItem>
+                    <MenuItem value="txt">Tekst</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Fade>
+          </Collapse>
+
+          {results.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                Pronađeno {results.length} rezultata
+              </Typography>
+              <SearchResults results={results} query={query} highlightText={highlightText} />
+            </Box>
+          )}
+
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Pretraga u toku...
+              </Typography>
+            </Box>
+          )}
         </Box>
-      )}
-
-      <SearchResults results={results} query={query} />
-    </Box>
+      </form>
+    </Paper>
   );
-};
-
-export default DocumentSearch; 
+} 

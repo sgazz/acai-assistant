@@ -1,84 +1,172 @@
-import React, { useState } from 'react';
-import { Button, Box, Typography, CircularProgress } from '@mui/material';
+'use client';
+
+import React, { useState, useRef } from 'react';
+import { Box, Button, Typography, LinearProgress, IconButton, Tooltip, Paper, Fade } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ArticleIcon from '@mui/icons-material/Article';
 
-interface DocumentUploadProps {
-  onUploadSuccess?: () => void;
-}
+export default function DocumentUpload() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
-    setIsUploading(true);
-    setUploadStatus('Uploading...');
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
 
-    const formData = new FormData();
-    formData.append('file', file);
+  const handleFileSelect = (file: File) => {
+    if (file.type === 'application/pdf' || 
+        file.type === 'application/msword' || 
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.type === 'text/plain') {
+      setSelectedFile(file);
+      simulateUpload();
+    } else {
+      alert('Podržani formati su: PDF, DOC, DOCX, TXT');
+    }
+  };
 
-    try {
-      const response = await fetch('http://localhost:8001/documents/upload', {
-        method: 'POST',
-        body: formData,
+  const simulateUpload = () => {
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 10;
       });
+    }, 200);
+  };
 
-      const data = await response.json();
+  const handleDelete = () => {
+    setSelectedFile(null);
+    setUploadProgress(0);
+  };
 
-      if (response.ok) {
-        setUploadStatus(`Success: ${data.message}`);
-        onUploadSuccess?.();
-      } else {
-        setUploadStatus(`Error: ${data.detail}`);
-      }
-    } catch (error) {
-      setUploadStatus('Error: Failed to upload document');
-    } finally {
-      setIsUploading(false);
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'application/pdf':
+        return <PictureAsPdfIcon />;
+      case 'application/msword':
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return <ArticleIcon />;
+      default:
+        return <DescriptionIcon />;
     }
   };
 
   return (
-    <Box sx={{ textAlign: 'center', p: 2 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        border: '2px dashed',
+        borderColor: isDragging ? 'primary.main' : 'divider',
+        borderRadius: 2,
+        bgcolor: isDragging ? 'action.hover' : 'background.paper',
+        transition: 'all 0.2s',
+      }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <input
-        accept=".pdf,.docx"
-        style={{ display: 'none' }}
-        id="document-upload"
         type="file"
-        onChange={handleFileUpload}
-        disabled={isUploading}
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+        accept=".pdf,.doc,.docx,.txt"
       />
-      <label htmlFor="document-upload">
-        <Button
-          variant="contained"
-          component="span"
-          startIcon={<CloudUploadIcon />}
-          disabled={isUploading}
-        >
-          Upload Document
-        </Button>
-      </label>
-      
-      {isUploading && (
-        <Box sx={{ mt: 2 }}>
-          <CircularProgress size={24} />
-        </Box>
-      )}
-      
-      {uploadStatus && (
-        <Typography
-          variant="body2"
-          color={uploadStatus.startsWith('Error') ? 'error' : 'success'}
-          sx={{ mt: 1 }}
-        >
-          {uploadStatus}
-        </Typography>
-      )}
-    </Box>
-  );
-};
 
-export default DocumentUpload; 
+      {!selectedFile ? (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            py: 3,
+          }}
+        >
+          <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+          <Typography variant="body2" color="text.secondary" align="center">
+            Prevucite dokument ovde ili{' '}
+            <Button
+              variant="text"
+              onClick={() => fileInputRef.current?.click()}
+              sx={{ textTransform: 'none' }}
+            >
+              izaberite fajl
+            </Button>
+          </Typography>
+          <Typography variant="caption" color="text.secondary" align="center">
+            Podržani formati: PDF, DOC, DOCX, TXT
+          </Typography>
+        </Box>
+      ) : (
+        <Fade in={!!selectedFile}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ color: 'text.secondary' }}>
+                {getFileIcon(selectedFile.type)}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" noWrap>
+                  {selectedFile.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {(selectedFile.size / 1024).toFixed(1)} KB
+                </Typography>
+              </Box>
+              <Tooltip title="Obriši">
+                <IconButton size="small" onClick={handleDelete}>
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {uploadProgress < 100 && (
+              <Box sx={{ width: '100%' }}>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={uploadProgress}
+                  sx={{
+                    height: 4,
+                    borderRadius: 2,
+                    bgcolor: 'action.hover',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  {uploadProgress}% otpremljeno
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Fade>
+      )}
+    </Paper>
+  );
+} 

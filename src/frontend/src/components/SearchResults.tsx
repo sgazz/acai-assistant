@@ -1,5 +1,13 @@
+'use client';
+
 import React from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Box, Paper, Typography, Chip, IconButton, Tooltip } from '@mui/material';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ArticleIcon from '@mui/icons-material/Article';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { motion } from 'framer-motion';
 
 interface SearchResult {
   content: string;
@@ -13,55 +21,109 @@ interface SearchResult {
 interface SearchResultsProps {
   results: SearchResult[];
   query: string;
+  highlightText: (text: string, query: string) => React.ReactNode;
 }
 
-const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
-  if (!results.length) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="body1" color="text.secondary">
-          Nema rezultata za pretragu: {query}
-        </Typography>
-      </Box>
-    );
-  }
+export default function SearchResults({ results, query, highlightText }: SearchResultsProps) {
+  const getFileIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return <PictureAsPdfIcon />;
+      case 'doc':
+      case 'docx':
+        return <ArticleIcon />;
+      default:
+        return <DescriptionIcon />;
+    }
+  };
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+  };
+
+  const handleOpen = (source: string) => {
+    window.open(source, '_blank');
+  };
 
   return (
-    <Paper elevation={2} sx={{ mt: 2, maxHeight: '400px', overflow: 'auto' }}>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Rezultati pretrage za: {query}
-        </Typography>
-        <List>
-          {results.map((result, index) => (
-            <React.Fragment key={index}>
-              <ListItem alignItems="flex-start">
-                <ListItemText
-                  primary={
-                    <Typography variant="subtitle2" color="primary">
-                      {result.metadata.source}
-                      {result.metadata.page && ` (Strana ${result.metadata.page})`}
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="text.primary"
-                      sx={{ display: 'block', mt: 1 }}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {results.map((result, index) => (
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.1 }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              bgcolor: 'background.paper',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              '&:hover': {
+                borderColor: 'primary.main',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+              <Box sx={{ color: 'text.secondary' }}>
+                {getFileIcon(result.metadata.type)}
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {result.metadata.source}
+                  </Typography>
+                  {result.metadata.page && (
+                    <Chip
+                      size="small"
+                      label={`Strana ${result.metadata.page}`}
+                      sx={{ bgcolor: 'action.selected' }}
+                    />
+                  )}
+                  <Chip
+                    size="small"
+                    label={result.metadata.type.toUpperCase()}
+                    sx={{ bgcolor: 'action.selected' }}
+                  />
+                </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    mb: 1,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {highlightText(result.content, query)}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Tooltip title="Kopiraj sadržaj">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleCopy(result.content)}
+                      sx={{ color: 'text.secondary' }}
                     >
-                      {result.content}
-                    </Typography>
-                  }
-                />
-              </ListItem>
-              {index < results.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-        </List>
-      </Box>
-    </Paper>
+                      <ContentCopyIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Otvori dokument">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpen(result.metadata.source)}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <OpenInNewIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Box>
+          </Paper>
+        </motion.div>
+      ))}
+    </Box>
   );
-};
-
-export default SearchResults; 
+} 

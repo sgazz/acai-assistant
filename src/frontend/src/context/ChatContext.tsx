@@ -9,6 +9,7 @@ const initialState: ChatState = {
   messages: [],
   isLoading: false,
   error: null,
+  editMessageId: null,
 };
 
 type ChatAction =
@@ -16,7 +17,9 @@ type ChatAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_MESSAGES'; payload: Message[] }
-  | { type: 'CLEAR_CHAT' };
+  | { type: 'CLEAR_CHAT' }
+  | { type: 'UPDATE_MESSAGE'; payload: { messageId: number; content: string } }
+  | { type: 'SET_EDIT_MESSAGE_ID'; payload: number | null };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -43,6 +46,20 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case 'CLEAR_CHAT':
       return {
         ...initialState,
+      };
+    case 'UPDATE_MESSAGE':
+      return {
+        ...state,
+        messages: state.messages.map(msg =>
+          msg.id === action.payload.messageId
+            ? { ...msg, content: action.payload.content }
+            : msg
+        ),
+      };
+    case 'SET_EDIT_MESSAGE_ID':
+      return {
+        ...state,
+        editMessageId: action.payload,
       };
     default:
       return state;
@@ -112,8 +129,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CLEAR_CHAT' });
   };
 
+  const updateMessage = (messageId: number, newContent: string) => {
+    dispatch({
+      type: 'UPDATE_MESSAGE',
+      payload: { messageId, content: newContent },
+    });
+  };
+
+  const setEditMessageId = (messageId: number | null) => {
+    dispatch({
+      type: 'SET_EDIT_MESSAGE_ID',
+      payload: messageId,
+    });
+  };
+
   return (
-    <ChatContext.Provider value={{ state, sendMessage, clearChat }}>
+    <ChatContext.Provider value={{ state, sendMessage, clearChat, updateMessage, setEditMessageId }}>
       {children}
     </ChatContext.Provider>
   );

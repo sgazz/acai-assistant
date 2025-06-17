@@ -33,29 +33,49 @@ export default function DocumentUpload() {
     }
   };
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     if (file.type === 'application/pdf' || 
         file.type === 'application/msword' || 
         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.type === 'text/plain') {
       setSelectedFile(file);
-      simulateUpload();
+      setUploadProgress(0);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('http://localhost:8001/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Greška pri otpremanju dokumenta');
+        }
+
+        const result = await response.json();
+        console.log('Upload uspešan:', result);
+        
+        // Simuliramo progres za bolji UX
+        const interval = setInterval(() => {
+          setUploadProgress((prev) => {
+            if (prev >= 100) {
+              clearInterval(interval);
+              return 100;
+            }
+            return prev + 10;
+          });
+        }, 100);
+      } catch (error) {
+        console.error('Greška:', error);
+        alert('Došlo je do greške pri otpremanju dokumenta');
+        setSelectedFile(null);
+        setUploadProgress(0);
+      }
     } else {
       alert('Podržani formati su: PDF, DOC, DOCX, TXT');
     }
-  };
-
-  const simulateUpload = () => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
   };
 
   const handleDelete = () => {

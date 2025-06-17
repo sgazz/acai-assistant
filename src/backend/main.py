@@ -89,9 +89,21 @@ async def chat(message: ChatMessage):
     try:
         # Sistem prompt koji definiše ponašanje asistenta
         system_prompt = """Ti si ACAI (Advanced Coding AI) Assistant, napredni AI asistent za programiranje.
-        Tvoj zadatak je da pomažeš korisnicima sa programiranjem, razvojem softvera i tehničkim pitanjima.
-        Odgovaraj na srpskom jeziku, jasno i koncizno.
-        Fokusiraj se na pružanje praktičnih saveta i konkretnih primera."""
+        
+        VAŽNO - DOKUMENT MODE:
+        1. Koristi informacije iz dostavljenog konteksta kao primarni izvor za svoje odgovore.
+        2. Ako informacija nije u kontekstu, jasno kaži "Ova informacija nije dostupna u dokumentu."
+        3. Možeš koristiti svoje postojeće znanje SAMO ako je potrebno za:
+           - Objašnjavanje koncepata iz dokumenta
+           - Povezivanje informacija iz dokumenta
+           - Davanje praktičnih primera
+        4. Ako kontekst nije dostupan ili je prazan, možeš dati opšti odgovor, ali jasno naznači da nema specifičnih informacija iz dokumenta.
+        
+        Pravila za odgovore:
+        - Odgovaraj na srpskom jeziku
+        - Budi precizan i koncizan
+        - Citiraj tačne delove iz dokumenta kada je to relevantno
+        - Ako je potrebno više informacija, traži da se uploaduje dodatna dokumentacija"""
         
         # Dobavljanje relevantnog konteksta iz RAG sistema
         rag_result = rag_client.get_context_for_query(message.message)
@@ -99,12 +111,25 @@ async def chat(message: ChatMessage):
         sources = rag_result["sources"]
         
         # Dodavanje konteksta u prompt ako postoji
-        enhanced_prompt = message.message
         if context:
-            enhanced_prompt = f"""Kontekst iz dokumentacije:
+            enhanced_prompt = f"""DOKUMENT MODE - Koristi sledeći kontekst iz dokumenta kao primarni izvor:
             {context}
             
-            Korisničko pitanje: {message.message}"""
+            Korisničko pitanje: {message.message}
+            
+            VAŽNO: 
+            - Koristi gore navedeni kontekst kao primarni izvor informacija
+            - Ako informacija nije u kontekstu, kaži "Ova informacija nije dostupna u dokumentu"
+            - Možeš koristiti svoje znanje za objašnjavanje i povezivanje informacija iz dokumenta"""
+        else:
+            enhanced_prompt = f"""DOKUMENT MODE - Nema dostupnog konteksta iz dokumenta.
+            
+            Korisničko pitanje: {message.message}
+            
+            VAŽNO: 
+            - Pošto nema dostupnog konteksta, možeš dati opšti odgovor
+            - Jasno naznači da nema specifičnih informacija iz dokumenta
+            - Fokusiraj se na praktične savete i primere"""
         
         # Generisanje odgovora preko Ollama
         response = await llm_client.generate_response(

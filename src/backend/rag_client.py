@@ -115,17 +115,27 @@ class RAGClient:
         """Pretražuje dokumente na osnovu upita"""
         return self.rag_service.search(query, k)
 
-    def get_context_for_query(self, query: str, k: int = 3) -> Dict[str, Any]:
-        """Dobavlja kontekst za upit koji će se koristiti sa LLM-om"""
+    def get_context_for_query(self, query: str, k: int = 8) -> Dict[str, Any]:
         results = self.search_documents(query, k)
-        context = "\n\n".join([doc["content"] for doc in results])
+        
+        # Filtriramo rezultate sa niskim skorom
+        filtered_results = [doc for doc in results if doc.get("score", 0) > 0.3]
+        
+        if not filtered_results:
+            return {
+                "context": "",
+                "sources": []
+            }
+        
+        context = "\n\n".join([doc["content"] for doc in filtered_results])
         sources = [
             {
                 "filename": doc["metadata"].get("source", "Unknown"),
                 "page_number": doc["metadata"].get("page", 0),
-                "content": doc["content"][:200] + "..." if len(doc["content"]) > 200 else doc["content"]  # Dodajemo kratak citat
+                "content": doc["content"][:200] + "..." if len(doc["content"]) > 200 else doc["content"],
+                "relevance_score": round(doc.get("score", 0) * 100, 2)
             }
-            for doc in results
+            for doc in filtered_results
         ]
         return {
             "context": context,

@@ -6,7 +6,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChatIcon from '@mui/icons-material/Chat';
 import DescriptionIcon from '@mui/icons-material/Description';
 import Sidebar from '../components/Sidebar';
-import ChatWindow from '../components/ChatWindow';
+import ChatWindow, { type ChatWindowProps } from '../components/ChatWindow';
 import DocumentList from '../components/DocumentList';
 
 export default function Home() {
@@ -153,7 +153,7 @@ export default function Home() {
             }}
           >
             {activeTab === 0 ? (
-              <ChatWindow />
+              <ChatWindow activeTab={activeTab} />
             ) : (
               <DocumentList />
             )}

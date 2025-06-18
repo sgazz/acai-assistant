@@ -221,7 +221,11 @@ const ReactionButton = ({
   );
 };
 
-export default function ChatWindow() {
+export type ChatWindowProps = {
+  activeTab?: number;
+};
+
+export default function ChatWindow({ activeTab }: ChatWindowProps) {
   const theme = useTheme();
   const { 
     state: { messages, isLoading, error, editMessageId, searchQuery, filteredMessages },
@@ -290,6 +294,12 @@ export default function ChatWindow() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (typeof activeTab !== 'undefined' && activeTab === 0) {
+      scrollToBottom();
+    }
+  }, [activeTab]);
 
   const handleCopyMessage = (messageId: number) => {
     const message = messages.find(m => m.id === messageId);

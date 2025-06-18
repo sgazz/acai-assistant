@@ -9,7 +9,18 @@ export interface Message {
   id: number;
   content: string;
   sender: 'user' | 'assistant';
-  timestamp: string;
+  timestamp: number;
+  sources?: Array<{
+    title: string;
+    content: string;
+    relevance: number;
+  }>;
+  status?: 'sending' | 'sent' | 'error';
+  isTyping?: boolean;
+  reactions?: Array<{
+    type: 'like' | 'dislike' | 'helpful';
+    timestamp: number;
+  }>;
 }
 
 export interface Document {
@@ -30,7 +41,13 @@ export interface DocumentPage {
   image_url?: string;
 }
 
-export async function sendChatMessage(content: string): Promise<ApiResponse<{ response: string }>> {
+export async function sendChatMessage(content: string): Promise<ApiResponse<{ 
+  response: string;
+  sources?: Array<{
+    filename: string;
+    page_number: number;
+  }>;
+}>> {
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',

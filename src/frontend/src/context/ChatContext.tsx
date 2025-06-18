@@ -10,6 +10,7 @@ const initialState: ChatState = {
   isLoading: false,
   error: null,
   editMessageId: null,
+  isTyping: false,
 };
 
 type ChatAction =
@@ -19,7 +20,8 @@ type ChatAction =
   | { type: 'SET_MESSAGES'; payload: Message[] }
   | { type: 'CLEAR_CHAT' }
   | { type: 'UPDATE_MESSAGE'; payload: { messageId: number; content: string } }
-  | { type: 'SET_EDIT_MESSAGE_ID'; payload: number | null };
+  | { type: 'SET_EDIT_MESSAGE_ID'; payload: number | null }
+  | { type: 'SET_TYPING'; payload: boolean };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -61,6 +63,11 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...state,
         editMessageId: action.payload,
       };
+    case 'SET_TYPING':
+      return {
+        ...state,
+        isTyping: action.payload,
+      };
     default:
       return state;
   }
@@ -71,13 +78,17 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
 
-  // Učitavanje poruka pri mount-u
   useEffect(() => {
     (async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       const res = await fetchMessages();
       if (res.data) {
-        dispatch({ type: 'SET_MESSAGES', payload: res.data });
+        // Konvertuj timestamp-ove iz stringa u broj
+        const messages = res.data.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp).getTime(),
+        }));
+        dispatch({ type: 'SET_MESSAGES', payload: messages });
       } else if (res.error) {
         dispatch({ type: 'SET_ERROR', payload: res.error });
       }
@@ -89,31 +100,63 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
-      const now = new Date().toISOString();
+      dispatch({ type: 'SET_TYPING', payload: true });
+      
+      const timestamp = Date.now();
       // 1. Sačuvaj korisničku poruku
       const userMessage: Omit<Message, 'id'> = {
         content,
         sender: 'user',
-        timestamp: now,
+        timestamp,
+        status: 'sending',
       };
-      const savedUser = await saveMessage(userMessage);
+      
+      const savedUser = await saveMessage({
+        ...userMessage,
+        timestamp: new Date(timestamp).toISOString(),
+      });
+      
       if (savedUser.data) {
-        dispatch({ type: 'SEND_MESSAGE', payload: savedUser.data });
+        const formattedUserMessage: Message = {
+          ...savedUser.data,
+          timestamp,
+          status: 'sent',
+        };
+        dispatch({ type: 'SEND_MESSAGE', payload: formattedUserMessage });
       }
+      
       // 2. Pošalji poruku AI-u
       const response = await sendChatMessage(content);
       if (response.error) {
         throw new Error(response.error);
       }
+      
       // 3. Sačuvaj AI poruku
+      const aiTimestamp = Date.now();
       const assistantMessage: Omit<Message, 'id'> = {
         content: response.data!.response,
         sender: 'assistant',
-        timestamp: new Date().toISOString(),
+        timestamp: aiTimestamp,
+        sources: response.data!.sources?.map(source => ({
+          title: source.filename,
+          content: `Page ${source.page_number}`,
+          relevance: 1,
+        })),
+        status: 'sending',
       };
-      const savedAssistant = await saveMessage(assistantMessage);
+      
+      const savedAssistant = await saveMessage({
+        ...assistantMessage,
+        timestamp: new Date(aiTimestamp).toISOString(),
+      });
+      
       if (savedAssistant.data) {
-        dispatch({ type: 'SEND_MESSAGE', payload: savedAssistant.data });
+        const formattedAssistantMessage: Message = {
+          ...savedAssistant.data,
+          timestamp: aiTimestamp,
+          status: 'sent',
+        };
+        dispatch({ type: 'SEND_MESSAGE', payload: formattedAssistantMessage });
       }
     } catch (error) {
       dispatch({ 
@@ -122,6 +165,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_TYPING', payload: false });
     }
   };
 

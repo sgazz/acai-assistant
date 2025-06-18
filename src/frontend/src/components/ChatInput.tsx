@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, TextField, IconButton, Tooltip, Paper, Collapse, Chip, Fade } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Paper, Collapse, Chip, Fade, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatItalicIcon from '@mui/icons-material/FormatItalic';
-import CodeIcon from '@mui/icons-material/Code';
-import LinkIcon from '@mui/icons-material/Link';
+import MicIcon from '@mui/icons-material/Mic';
+import StopIcon from '@mui/icons-material/Stop';
 import { useChatContext } from '../context/ChatContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const quickReplies = [
   'Objasni mi ovo detaljnije',
@@ -20,8 +19,11 @@ const quickReplies = [
 export default function ChatInput() {
   const [message, setMessage] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { sendMessage } = useChatContext();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { sendMessage, state: { isTyping } } = useChatContext();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -30,10 +32,10 @@ export default function ChatInput() {
     }
   }, [message]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      sendMessage(message);
+      await sendMessage(message);
       setMessage('');
       setIsExpanded(false);
       if (textareaRef.current) {
@@ -49,38 +51,25 @@ export default function ChatInput() {
     }
   };
 
-  const insertMarkdown = (type: 'bold' | 'italic' | 'code' | 'link') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = message.substring(start, end);
-    let newText = '';
-
-    switch (type) {
-      case 'bold':
-        newText = `**${selectedText}**`;
-        break;
-      case 'italic':
-        newText = `*${selectedText}*`;
-        break;
-      case 'code':
-        newText = `\`${selectedText}\``;
-        break;
-      case 'link':
-        newText = `[${selectedText}](url)`;
-        break;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setIsUploading(true);
+      try {
+        // TODO: Implementirati upload fajlova
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setMessage(prev => `${prev}\nUploaded: ${files[0].name}`);
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      } finally {
+        setIsUploading(false);
+      }
     }
+  };
 
-    const newMessage = message.substring(0, start) + newText + message.substring(end);
-    setMessage(newMessage);
-
-    // Fokusiraj textarea i postavi kursor na kraj umetnutog teksta
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + newText.length, start + newText.length);
-    }, 0);
+  const handleVoiceRecord = () => {
+    setIsRecording(!isRecording);
+    // TODO: Implementirati snimanje glasa
   };
 
   return (
@@ -95,96 +84,107 @@ export default function ChatInput() {
     >
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Bold">
-              <IconButton size="small" onClick={() => insertMarkdown('bold')}>
-                <FormatBoldIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Italic">
-              <IconButton size="small" onClick={() => insertMarkdown('italic')}>
-                <FormatItalicIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Code">
-              <IconButton size="small" onClick={() => insertMarkdown('code')}>
-                <CodeIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Link">
-              <IconButton size="small" onClick={() => insertMarkdown('link')}>
-                <LinkIcon />
-              </IconButton>
-            </Tooltip>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
             <Tooltip title="Priloži fajl">
-              <IconButton size="small">
-                <AttachFileIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          <TextField
-            multiline
-            maxRows={4}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsExpanded(true)}
-            placeholder="Napišite poruku..."
-            inputRef={textareaRef}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                bgcolor: 'background.default',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              },
-            }}
-          />
-
-          <Collapse in={isExpanded}>
-            <Fade in={isExpanded}>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {quickReplies.map((reply, index) => (
-                  <Chip
-                    key={index}
-                    label={reply}
-                    onClick={() => {
-                      setMessage(reply);
-                      setIsExpanded(false);
-                    }}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: 'action.selected',
-                      },
-                    }}
-                  />
-                ))}
-              </Box>
-            </Fade>
-          </Collapse>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Tooltip title="Pošalji (Enter)">
               <IconButton
-                type="submit"
                 color="primary"
-                disabled={!message.trim()}
-                sx={{
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                }}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
               >
-                <SendIcon />
+                {isUploading ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  <AttachFileIcon />
+                )}
               </IconButton>
             </Tooltip>
+            
+            <TextField
+              multiline
+              maxRows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsExpanded(true)}
+              placeholder={isTyping ? 'AI kuca odgovor...' : 'Napišite poruku...'}
+              disabled={isTyping}
+              inputRef={textareaRef}
+              fullWidth
+              InputProps={{
+                sx: {
+                  borderRadius: 3,
+                  bgcolor: 'background.default',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                },
+                endAdornment: (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title={isRecording ? 'Zaustavi snimanje' : 'Glasovna poruka'}>
+                      <IconButton
+                        color={isRecording ? 'error' : 'primary'}
+                        onClick={handleVoiceRecord}
+                      >
+                        {isRecording ? <StopIcon /> : <MicIcon />}
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton
+                      type="submit"
+                      color="primary"
+                      disabled={!message.trim() || isTyping}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': {
+                          color: 'primary.dark',
+                        },
+                      }}
+                    >
+                      <SendIcon />
+                    </IconButton>
+                  </Box>
+                ),
+              }}
+            />
           </Box>
+
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {quickReplies.map((reply, index) => (
+                    <Chip
+                      key={index}
+                      label={reply}
+                      onClick={() => {
+                        setMessage(reply);
+                        setIsExpanded(false);
+                      }}
+                      sx={{
+                        '&:hover': {
+                          bgcolor: 'action.selected',
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Box>
       </form>
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={handleFileUpload}
+        accept=".pdf,.doc,.docx,.txt"
+      />
     </Paper>
   );
 }

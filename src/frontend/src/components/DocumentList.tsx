@@ -322,22 +322,18 @@ export default function DocumentList() {
       </Paper>
 
       <Paper sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
           <TextField
-            fullWidth
-            variant="outlined"
+            size="small"
             placeholder="Pretraži dokumente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
+              startAdornment: <SearchIcon sx={{ mr: 1, opacity: 0.5 }} />,
             }}
+            sx={{ flex: 1 }}
           />
-          <Tooltip title="Promeni redosled sortiranja">
+          <Tooltip title="Sortiraj po datumu">
             <IconButton onClick={handleSortToggle}>
               <SortIcon />
             </IconButton>
@@ -370,7 +366,7 @@ export default function DocumentList() {
         </Box>
 
         {activeFiltersCount > 0 && (
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
               Aktivni filteri:
             </Typography>
@@ -412,32 +408,38 @@ export default function DocumentList() {
           </Box>
         )}
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <List sx={{ flex: 1, overflow: 'auto' }}>
-            {filteredDocuments.map((doc) => (
-              <React.Fragment key={doc.id}>
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <List>
+              {filteredDocuments.map((doc) => (
                 <ListItem
-                  role="button"
+                  key={doc.id}
                   onClick={() => handleOpenDoc(doc)}
                   sx={{
+                    cursor: 'pointer',
                     '&:hover': {
                       bgcolor: 'action.hover',
                     },
-                    cursor: 'pointer'
                   }}
                 >
                   <ListItemIcon>
                     {getFileIcon(doc.file_type)}
                   </ListItemIcon>
                   <ListItemText
-                    primary={doc.filename}
+                    primary={
+                      <Typography variant="body1">
+                        {highlightText(doc.filename, search)}
+                      </Typography>
+                    }
                     secondary={
                       <Stack direction="row" spacing={1} alignItems="center">
-                        {new Date(doc.created_at).toLocaleDateString('sr-RS')}
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(doc.created_at).toLocaleDateString('sr-RS')}
+                        </Typography>
                         <Chip
                           label={doc.file_type}
                           size="small"
@@ -452,7 +454,7 @@ export default function DocumentList() {
                           label={doc.status}
                           size="small"
                           variant="outlined"
-                          onClick={(e: React.MouseEvent) => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             handleFilterChange('status', doc.status);
                           }}
@@ -462,19 +464,17 @@ export default function DocumentList() {
                   />
                   <Tooltip title="Obriši dokument">
                     <IconButton
-                      size="small"
                       onClick={(e) => handleDeleteClick(doc, e)}
-                      sx={{ ml: 1 }}
+                      sx={{ opacity: 0.5, '&:hover': { opacity: 1 } }}
                     >
                       <DeleteIcon />
                     </IconButton>
                   </Tooltip>
                 </ListItem>
-                <Divider />
-              </React.Fragment>
-            ))}
-          </List>
-        )}
+              ))}
+            </List>
+          )}
+        </Box>
       </Paper>
 
       <Dialog
@@ -601,10 +601,10 @@ export default function DocumentList() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
         <Alert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
@@ -612,7 +612,6 @@ export default function DocumentList() {
         </Alert>
       </Snackbar>
 
-      {/* Filter Menu */}
       <Menu
         anchorEl={filterAnchorEl}
         open={Boolean(filterAnchorEl)}
@@ -627,10 +626,10 @@ export default function DocumentList() {
               onChange={(e) => handleFilterChange('type', e.target.value)}
             >
               <MenuItem value="">Svi tipovi</MenuItem>
-              <MenuItem value=".pdf">PDF</MenuItem>
-              <MenuItem value=".doc">DOC</MenuItem>
-              <MenuItem value=".docx">DOCX</MenuItem>
-              <MenuItem value=".txt">TXT</MenuItem>
+              <MenuItem value="pdf">PDF</MenuItem>
+              <MenuItem value="doc">DOC</MenuItem>
+              <MenuItem value="docx">DOCX</MenuItem>
+              <MenuItem value="txt">TXT</MenuItem>
             </Select>
           </FormControl>
         </MenuItem>
@@ -651,7 +650,6 @@ export default function DocumentList() {
         </MenuItem>
       </Menu>
 
-      {/* Date Filter Popover */}
       <Popover
         open={Boolean(datePickerAnchorEl)}
         anchorEl={datePickerAnchorEl}

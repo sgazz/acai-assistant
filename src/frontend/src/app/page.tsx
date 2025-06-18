@@ -7,7 +7,6 @@ import ChatIcon from '@mui/icons-material/Chat';
 import DescriptionIcon from '@mui/icons-material/Description';
 import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
-import ChatInput from '../components/ChatInput';
 import DocumentList from '../components/DocumentList';
 
 export default function Home() {
@@ -29,9 +28,9 @@ export default function Home() {
       sx={{
         display: 'flex',
         width: '100vw',
-        minHeight: '100vh',
+        height: '100vh',
         bgcolor: 'background.default',
-        overflowX: 'auto',
+        overflowX: 'hidden',
         justifyContent: 'center',
       }}
     >
@@ -41,7 +40,7 @@ export default function Home() {
           width: '100%',
           maxWidth: '1280px',
           minWidth: 0,
-          height: '100vh',
+          height: '100%',
           position: 'relative',
         }}
       >
@@ -84,9 +83,10 @@ export default function Home() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '100vh',
+            height: '100%',
             position: 'relative',
             minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           {isMobile && (
@@ -118,30 +118,46 @@ export default function Home() {
               borderBottom: 1,
               borderColor: 'divider',
               bgcolor: 'background.paper',
+              position: 'sticky',
+              top: 0,
+              zIndex: 1,
+              minHeight: 48,
             }}
           >
             <Tab
               icon={<ChatIcon />}
               label="Chat"
               iconPosition="start"
-              sx={{ minHeight: 64 }}
+              sx={{ 
+                minHeight: 48,
+                py: 0
+              }}
             />
             <Tab
               icon={<DescriptionIcon />}
               label="Dokumenti"
               iconPosition="start"
-              sx={{ minHeight: 64 }}
+              sx={{ 
+                minHeight: 48,
+                py: 0
+              }}
             />
           </Tabs>
 
-          {activeTab === 0 ? (
-            <>
+          <Box
+            sx={{
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {activeTab === 0 ? (
               <ChatWindow />
-              <ChatInput />
-            </>
-          ) : (
-            <DocumentList />
-          )}
+            ) : (
+              <DocumentList />
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>

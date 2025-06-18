@@ -16,6 +16,8 @@ import {
   Typography,
   Badge,
   Collapse,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -29,7 +31,9 @@ import {
   Notifications as NotificationsIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
+import { useChatContext } from '../context/ChatContext';
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 72;
@@ -87,16 +91,24 @@ const categories: Category[] = [
   },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState('chat');
+  const { state: { searchQuery }, setSearchQuery } = useChatContext();
 
   const handleCategoryClick = (categoryId: string) => {
     if (categories.find(cat => cat.id === categoryId)?.subCategories) {
       setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
     } else {
       setSelectedItem(categoryId);
+      if (onClose) {
+        onClose();
+      }
     }
   };
 
@@ -145,6 +157,26 @@ export default function Sidebar() {
           {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </IconButton>
       </Box>
+
+      {/* Search Bar */}
+      {!isCollapsed && (
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Pretraži chat..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+      )}
 
       {/* Main Navigation */}
       <List sx={{ flex: 1, overflow: 'auto', pt: 0 }}>

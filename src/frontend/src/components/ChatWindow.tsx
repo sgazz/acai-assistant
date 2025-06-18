@@ -19,6 +19,7 @@ import { vscDarkPlus, tomorrow } from 'react-syntax-highlighter/dist/esm/styles/
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message, MessageReaction } from '../types/chat';
+import ChatInput from './ChatInput';
 
 const MessageSkeleton = () => {
   const theme = useTheme();
@@ -223,45 +224,48 @@ const ReactionButton = ({
 export default function ChatWindow() {
   const theme = useTheme();
   const { 
-    state: { messages, isLoading, error, editMessageId },
+    state: { messages, isLoading, error, editMessageId, searchQuery, filteredMessages },
     setEditMessageId,
     updateMessage,
     addReaction,
     removeReaction,
     clearChat,
-    sendMessage
+    sendMessage,
+    setSearchQuery
   } = useChatContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [retryKey, setRetryKey] = useState(0); // Za force refresh
+  const [retryKey, setRetryKey] = useState(0);
 
   const messageGroups = useMemo(() => {
     const groups: MessageGroup[] = [];
     let currentDate = '';
     
-    messages.forEach(message => {
+    const messagesToGroup = searchQuery ? filteredMessages : messages;
+    
+    messagesToGroup.forEach(message => {
       const date = new Date(message.timestamp).toLocaleDateString('sr-RS', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
-      
+
       if (date !== currentDate) {
+        currentDate = date;
         groups.push({
           date,
           messages: [message]
         });
-        currentDate = date;
       } else {
         groups[groups.length - 1].messages.push(message);
       }
     });
     
     return groups;
-  }, [messages]);
+  }, [messages, filteredMessages, searchQuery]);
 
   useEffect(() => {
     // Simuliramo inicijalno učitavanje
@@ -329,22 +333,30 @@ export default function ChatWindow() {
     }
   };
 
-  const renderMessage = (message: Message) => {
+  const renderMessage = (message: Message, index: number) => {
     const isUser = message.sender === 'user';
     const isEditing = editMessageId === message.id;
+    const isCopied = copiedMessageId === message.id;
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 260,
-          damping: 20,
-          duration: 0.3
+      <Box
+        key={`message-${message.id}-${index}`}
+        sx={{
+          display: 'flex',
+          justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+          mb: 2,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', mb: 2 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+            duration: 0.3
+          }}
+        >
           <motion.div
             whileHover={{ scale: 1.01 }}
             style={{ maxWidth: '80%', width: 'fit-content' }}
@@ -505,7 +517,7 @@ export default function ChatWindow() {
                             '&:hover': { opacity: 1 },
                           }}
                         >
-                          {copiedMessageId === message.id ? (
+                          {isCopied ? (
                             <CheckIcon fontSize="small" />
                           ) : (
                             <ContentCopyIcon fontSize="small" />
@@ -539,7 +551,7 @@ export default function ChatWindow() {
                           '&:hover': { opacity: 1 },
                         }}
                       >
-                        {copiedMessageId === message.id ? (
+                        {isCopied ? (
                           <CheckIcon fontSize="small" />
                         ) : (
                           <ContentCopyIcon fontSize="small" />
@@ -586,143 +598,144 @@ export default function ChatWindow() {
               })}
             </Box>
           )}
-        </Box>
-      </motion.div>
+        </motion.div>
+      </Box>
     );
   };
 
   return (
     <Box
       sx={{
-        height: 'calc(100vh - 140px)',
-        overflowY: 'auto',
-        p: 2,
-        bgcolor: theme.palette.mode === 'dark' ? 'background.default' : 'grey.100',
-        scrollBehavior: 'smooth',
-        '&::-webkit-scrollbar': {
-          width: '8px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-          borderRadius: '4px',
-          '&:hover': {
-            background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-          },
-        },
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+        position: 'relative',
       }}
     >
-      {error && (
-        <Alert 
-          severity="error" 
-          action={
-            <IconButton
-              color="inherit"
-              size="small"
-              onClick={handleRetry}
-            >
-              <RefreshIcon />
-            </IconButton>
-          }
-          sx={{ mb: 2 }}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {initialLoading ? (
-        <MessageSkeleton />
-      ) : messages.length === 0 ? (
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            height: '100%',
-            opacity: 0.7
+      {searchQuery && (
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          <ArticleIcon sx={{ fontSize: 48, mb: 2 }} />
-          <Typography variant="h6" gutterBottom>
-            Nema poruka
-          </Typography>
           <Typography variant="body2" color="text.secondary">
-            Započnite razgovor slanjem prve poruke
+            {filteredMessages.length === 0
+              ? 'Nema rezultata za pretragu'
+              : `Pronađeno ${filteredMessages.length} ${
+                  filteredMessages.length === 1 ? 'rezultat' : 'rezultata'
+                } za "${searchQuery}"`}
           </Typography>
+          <IconButton
+            size="small"
+            onClick={() => setSearchQuery('')}
+            sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
-      ) : (
-        <>
-          {messageGroups.map((group, index) => (
-            <React.Fragment key={group.date}>
-              <Box
+      )}
+
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          p: 2,
+          scrollBehavior: 'smooth',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            borderRadius: '4px',
+            '&:hover': {
+              background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+            },
+          },
+        }}
+      >
+        {error && (
+          <Alert 
+            severity="error" 
+            action={
+              <IconButton
+                color="inherit"
+                size="small"
+                onClick={handleRetry}
+              >
+                <RefreshIcon fontSize="inherit" />
+              </IconButton>
+            }
+            sx={{ mb: 2 }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {initialLoading ? (
+          <MessageSkeleton />
+        ) : (
+          messageGroups.map((group, groupIndex) => (
+            <Box key={`group-${group.date}-${groupIndex}`} sx={{ mb: 4 }}>
+              <Typography
+                variant="caption"
+                component="div"
+                align="center"
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  my: 3,
-                  opacity: 0.7,
+                  color: 'text.secondary',
+                  mb: 2,
+                  position: 'sticky',
+                  top: 0,
+                  bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+                  py: 1,
+                  zIndex: 1,
                 }}
               >
-                <Divider sx={{ flex: 1 }} />
-                <Typography variant="body2" color="text.secondary">
-                  {group.date}
-                </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
-              {group.messages.map((message) => (
-                <React.Fragment key={message.id}>
-                  {renderMessage(message)}
-                </React.Fragment>
-              ))}
-            </React.Fragment>
-          ))}
-        </>
-      )}
-      
-      {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
-          <Paper
-            elevation={theme.palette.mode === 'dark' ? 2 : 0}
-            sx={{
-              p: 2,
-              bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'grey.50',
-              borderRadius: '18px 18px 18px 4px',
-              border: '1px solid',
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'divider',
-            }}
-          >
-            <TypingIndicator />
-          </Paper>
-        </Box>
-      )}
-      
-      <div ref={messagesEndRef} style={{ height: 1 }} />
+                {group.date}
+              </Typography>
+              {group.messages.map((message, index) => renderMessage(message, index))}
+            </Box>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </Box>
+
+      <Box
+        sx={{
+          p: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'background.paper',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 2,
+        }}
+      >
+        <ChatInput />
+      </Box>
 
       <Dialog
-        open={!!selectedMessage}
+        open={Boolean(selectedMessage)}
         onClose={handleCloseSources}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Izvori</Typography>
-            <IconButton onClick={handleCloseSources} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
+        <DialogTitle>Izvori</DialogTitle>
         <DialogContent>
           {selectedMessage?.sources?.map((source, index) => (
-            <Box key={index} sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                {source.filename}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Stranica {source.page_number}
+            <Box key={`source-${index}-${source.title}`} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ArticleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              <Typography variant="body2">
+                {source.title} - {source.content}
               </Typography>
             </Box>
           ))}

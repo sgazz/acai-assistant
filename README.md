@@ -66,6 +66,24 @@ acai-assistant/
 - 🎨 Responzivan dizajn
 - ⚡ Brzo učitavanje i odgovori
 
+## Screenshot-ovi aplikacije
+
+### Chat interfejs
+![Chat interfejs aplikacije](docs/images/chat-view.png)
+*Chat interfejs sa podrškom za medicinske upite*
+
+### Medicinski odgovori
+![Medicinski chat](docs/images/chat-medical.png)
+*Detaljan prikaz medicinskih informacija*
+
+### Upload dokumenata
+![Upload interfejs](docs/images/document-upload.png)
+*Interfejs za upload dokumenata sa podrškom za različite formate*
+
+### Lista dokumenata
+![Lista dokumenata](docs/images/document-list.png)
+*Pregled uploadovanih dokumenata sa metapodacima*
+
 ## Razvoj
 - Implementiran je sistem za upravljanje stanjem koristeći React Context API
 - Dodata je podrška za čuvanje poruka u Supabase bazi

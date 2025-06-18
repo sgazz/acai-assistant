@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, TextField, IconButton, Tooltip, Paper, Collapse, Chip, Fade, CircularProgress } from '@mui/material';
+import { Box, TextField, IconButton, Tooltip, Paper, Chip } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 import { useChatContext } from '../context/ChatContext';
@@ -20,9 +19,7 @@ export default function ChatInput() {
   const [message, setMessage] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { sendMessage, state: { isTyping, isLoading }, stopGenerating } = useChatContext();
 
   useEffect(() => {
@@ -51,22 +48,6 @@ export default function ChatInput() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setIsUploading(true);
-      try {
-        // TODO: Implementirati upload fajlova
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setMessage(prev => `${prev}\nUploaded: ${files[0].name}`);
-      } catch (error) {
-        console.error('Error uploading file:', error);
-      } finally {
-        setIsUploading(false);
-      }
-    }
-  };
-
   const handleVoiceRecord = () => {
     setIsRecording(!isRecording);
     // TODO: Implementirati snimanje glasa
@@ -84,78 +65,62 @@ export default function ChatInput() {
     >
       <form onSubmit={handleSubmit}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
-            <Tooltip title="Priloži fajl">
-              <IconButton
-                color="primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <AttachFileIcon />
-                )}
-              </IconButton>
-            </Tooltip>
-            
-            <TextField
-              multiline
-              maxRows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsExpanded(true)}
-              placeholder={isTyping ? 'AI kuca odgovor...' : 'Napišite poruku...'}
-              disabled={isTyping}
-              inputRef={textareaRef}
-              fullWidth
-              InputProps={{
-                sx: {
-                  borderRadius: 3,
-                  bgcolor: 'background.default',
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                  },
+          <TextField
+            multiline
+            maxRows={4}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsExpanded(true)}
+            placeholder={isTyping ? 'AI kuca odgovor...' : 'Napišite poruku...'}
+            disabled={isTyping}
+            inputRef={textareaRef}
+            fullWidth
+            InputProps={{
+              sx: {
+                borderRadius: 3,
+                bgcolor: 'background.default',
+                '&:hover': {
+                  bgcolor: 'action.hover',
                 },
-                endAdornment: (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {isLoading && (
-                      <Tooltip title="Prekini generisanje">
-                        <IconButton
-                          color="error"
-                          onClick={stopGenerating}
-                        >
-                          <StopIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <Tooltip title={isRecording ? 'Zaustavi snimanje' : 'Glasovna poruka'}>
+              },
+              endAdornment: (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {isLoading && (
+                    <Tooltip title="Prekini generisanje">
                       <IconButton
-                        color={isRecording ? 'error' : 'primary'}
-                        onClick={handleVoiceRecord}
+                        color="error"
+                        onClick={stopGenerating}
                       >
-                        {isRecording ? <StopIcon /> : <MicIcon />}
+                        <StopIcon />
                       </IconButton>
                     </Tooltip>
+                  )}
+                  <Tooltip title={isRecording ? 'Zaustavi snimanje' : 'Glasovna poruka'}>
                     <IconButton
-                      type="submit"
-                      color="primary"
-                      disabled={!message.trim() || isTyping}
-                      sx={{
-                        color: 'primary.main',
-                        '&:hover': {
-                          color: 'primary.dark',
-                        },
-                      }}
+                      color={isRecording ? 'error' : 'primary'}
+                      onClick={handleVoiceRecord}
                     >
-                      <SendIcon />
+                      {isRecording ? <StopIcon /> : <MicIcon />}
                     </IconButton>
-                  </Box>
-                ),
-              }}
-            />
-          </Box>
+                  </Tooltip>
+                  <IconButton
+                    type="submit"
+                    color="primary"
+                    disabled={!message.trim() || isTyping}
+                    sx={{
+                      color: 'primary.main',
+                      '&:hover': {
+                        color: 'primary.dark',
+                      },
+                    }}
+                  >
+                    <SendIcon />
+                  </IconButton>
+                </Box>
+              ),
+            }}
+          />
 
           <AnimatePresence>
             {isExpanded && (
@@ -187,14 +152,6 @@ export default function ChatInput() {
           </AnimatePresence>
         </Box>
       </form>
-      
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        onChange={handleFileUpload}
-        accept=".pdf,.doc,.docx,.txt"
-      />
     </Paper>
   );
 }

@@ -1,9 +1,13 @@
 export interface Message {
   id: number;
   content: string;
-  sender: 'user' | 'ai';
-  timestamp: string;
-  sources?: Source[];
+  sender: 'user' | 'assistant';
+  timestamp: number;
+  sources?: {
+    title: string;
+    content: string;
+    relevance: number;
+  }[];
   status?: 'sending' | 'sent' | 'error';
   isTyping?: boolean;
   reactions?: MessageReaction[];
@@ -55,6 +59,8 @@ export interface ChatState {
   error: string | null;
   editMessageId: number | null;
   isGenerating: boolean;
+  searchQuery: string;
+  filteredMessages: Message[];
 }
 
 export interface ChatContextType {
@@ -66,4 +72,5 @@ export interface ChatContextType {
   stopGenerating: () => void;
   addReaction: (messageId: number, type: MessageReaction['type']) => void;
   removeReaction: (messageId: number, type: MessageReaction['type']) => void;
+  setSearchQuery: (query: string) => void;
 } 

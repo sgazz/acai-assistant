@@ -1,201 +1,233 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, TextField, IconButton, Tooltip, Divider, List, ListItem, ListItemText, ListItemIcon, Collapse, ListItemButton, Paper, Avatar } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChatIcon from '@mui/icons-material/Chat';
-import SchoolIcon from '@mui/icons-material/School';
-import ScienceIcon from '@mui/icons-material/Science';
-import HistoryIcon from '@mui/icons-material/History';
-import SettingsIcon from '@mui/icons-material/Settings';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+  Tooltip,
+  Divider,
+  Avatar,
+  Typography,
+  Badge,
+  Collapse,
+} from '@mui/material';
+import {
+  Chat as ChatIcon,
+  Description as DocumentIcon,
+  Science as BiologyIcon,
+  Calculate as MathIcon,
+  History as HistoryIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Settings as SettingsIcon,
+  Notifications as NotificationsIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+} from '@mui/icons-material';
 
-interface Chat {
+const DRAWER_WIDTH = 280;
+const COLLAPSED_DRAWER_WIDTH = 72;
+
+interface Category {
   id: string;
-  title: string;
-  category: string;
-  lastMessage: string;
-  timestamp: string;
+  name: string;
+  icon: React.ReactNode;
+  unreadCount?: number;
+  subCategories?: { id: string; name: string }[];
 }
 
-interface SidebarProps {
-  onClose?: () => void;
-}
-
-const categories = [
-  { id: 'biology', name: 'Biologija', icon: <ScienceIcon /> },
-  { id: 'math', name: 'Matematika', icon: <SchoolIcon /> },
-  { id: 'history', name: 'Istorija', icon: <HistoryIcon /> },
+const categories: Category[] = [
+  {
+    id: 'chat',
+    name: 'Chat',
+    icon: <ChatIcon />,
+    unreadCount: 2,
+  },
+  {
+    id: 'documents',
+    name: 'Dokumenti',
+    icon: <DocumentIcon />,
+    unreadCount: 1,
+  },
+  {
+    id: 'biology',
+    name: 'Biologija',
+    icon: <BiologyIcon />,
+    subCategories: [
+      { id: 'cell', name: 'Ćelijska struktura' },
+      { id: 'genetics', name: 'Genetika' },
+      { id: 'evolution', name: 'Evolucija' },
+    ],
+  },
+  {
+    id: 'math',
+    name: 'Matematika',
+    icon: <MathIcon />,
+    subCategories: [
+      { id: 'algebra', name: 'Algebra' },
+      { id: 'geometry', name: 'Geometrija' },
+      { id: 'calculus', name: 'Analiza' },
+    ],
+  },
+  {
+    id: 'history',
+    name: 'Istorija',
+    icon: <HistoryIcon />,
+    subCategories: [
+      { id: 'ancient', name: 'Stari vek' },
+      { id: 'medieval', name: 'Srednji vek' },
+      { id: 'modern', name: 'Moderno doba' },
+    ],
+  },
 ];
 
-const dummyChats: Chat[] = [
-  { id: '1', title: 'Ćelijska struktura', category: 'biology', lastMessage: 'Da li možeš da objasniš razliku između...', timestamp: '10:30' },
-  { id: '2', title: 'Kvadratne jednačine', category: 'math', lastMessage: 'Kako se rešava kvadratna jednačina...', timestamp: '09:15' },
-  { id: '3', title: 'Rimsko carstvo', category: 'history', lastMessage: 'Koji su bili glavni razlozi...', timestamp: '08:45' },
-];
-
-export default function Sidebar({ onClose }: SidebarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>('biology');
-  const [activeChat, setActiveChat] = useState<string>('1');
+export default function Sidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState('chat');
 
   const handleCategoryClick = (categoryId: string) => {
-    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+    if (categories.find(cat => cat.id === categoryId)?.subCategories) {
+      setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+    } else {
+      setSelectedItem(categoryId);
+    }
   };
 
-  const handleChatClick = (chatId: string) => {
-    setActiveChat(chatId);
-    onClose?.();
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+    if (!isCollapsed) {
+      setExpandedCategory(null);
+    }
   };
-
-  const filteredChats = dummyChats.filter(chat => 
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
-    <Paper 
-      elevation={0}
+    <Drawer
+      variant="permanent"
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.paper',
-        borderRight: '1px solid',
-        borderColor: 'divider',
+        width: isCollapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: isCollapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
+          boxSizing: 'border-box',
+          bgcolor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          transition: theme => theme.transitions.create(['width'], {
+            duration: theme.transitions.duration.standard,
+          }),
+        },
       }}
     >
-      <Box 
-        sx={{ 
-          p: 3,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+      {/* Header */}
+      <Box
+        sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          justifyContent: isCollapsed ? 'center' : 'space-between',
+          p: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
-        <Avatar 
-          sx={{ 
-            bgcolor: 'primary.main',
-            width: 32,
-            height: 32,
-          }}
-        >
-          A
-        </Avatar>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          ACAI Assistant
-        </Typography>
+        {!isCollapsed && (
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+            ACAI Assistant
+          </Typography>
+        )}
+        <IconButton onClick={toggleCollapse}>
+          {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
       </Box>
 
-      <Box sx={{ p: 2 }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Pretraži chatove..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
-            sx: {
-              bgcolor: 'action.hover',
-              borderRadius: 2,
-              '&:hover': {
-                bgcolor: 'action.selected',
-              },
-            },
-          }}
-        />
-      </Box>
-
-      <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>
-        <List component="nav" disablePadding>
-          {categories.map((category) => (
-            <React.Fragment key={category.id}>
+      {/* Main Navigation */}
+      <List sx={{ flex: 1, overflow: 'auto', pt: 0 }}>
+        {categories.map((category) => (
+          <React.Fragment key={category.id}>
+            <ListItem disablePadding>
               <ListItemButton
+                selected={selectedItem === category.id}
                 onClick={() => handleCategoryClick(category.id)}
                 sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                  },
+                  minHeight: 48,
+                  px: 2.5,
+                  ...(isCollapsed && {
+                    justifyContent: 'center',
+                    px: 1.5,
+                  }),
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {category.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={category.name}
-                  primaryTypographyProps={{
-                    fontWeight: expandedCategory === category.id ? 600 : 400,
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: isCollapsed ? 0 : 2,
+                    justifyContent: 'center',
                   }}
-                />
-                {expandedCategory === category.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </ListItemButton>
-              <Collapse in={expandedCategory === category.id} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  {filteredChats
-                    .filter(chat => chat.category === category.id)
-                    .map((chat) => (
-                      <ListItemButton
-                        key={chat.id}
-                        onClick={() => handleChatClick(chat.id)}
-                        sx={{
-                          ml: 2,
-                          borderRadius: 2,
-                          mb: 0.5,
-                          bgcolor: activeChat === chat.id ? 'action.selected' : 'transparent',
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
+                >
+                  {category.unreadCount ? (
+                    <Badge badgeContent={category.unreadCount} color="primary">
+                      {category.icon}
+                    </Badge>
+                  ) : (
+                    category.icon
+                  )}
+                </ListItemIcon>
+                {!isCollapsed && (
+                  <>
+                    <ListItemText primary={category.name} />
+                    {category.subCategories && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCategoryClick(category.id);
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 40 }}>
-                          <ChatIcon />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={chat.title}
-                          secondary={chat.lastMessage}
-                          primaryTypographyProps={{
-                            fontSize: '0.875rem',
-                            fontWeight: activeChat === chat.id ? 600 : 400,
-                          }}
-                          secondaryTypographyProps={{
-                            fontSize: '0.75rem',
-                            color: 'text.secondary',
-                            sx: {
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 1,
-                              WebkitBoxOrient: 'vertical',
-                            },
-                          }}
-                        />
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            color: 'text.secondary',
-                            fontSize: '0.75rem',
-                          }}
-                        >
-                          {chat.timestamp}
-                        </Typography>
-                      </ListItemButton>
-                    ))}
+                        {expandedCategory === category.id ? (
+                          <ExpandLessIcon />
+                        ) : (
+                          <ExpandMoreIcon />
+                        )}
+                      </IconButton>
+                    )}
+                  </>
+                )}
+              </ListItemButton>
+            </ListItem>
+            {!isCollapsed && category.subCategories && (
+              <Collapse in={expandedCategory === category.id}>
+                <List disablePadding>
+                  {category.subCategories.map((sub) => (
+                    <ListItemButton
+                      key={sub.id}
+                      selected={selectedItem === sub.id}
+                      onClick={() => setSelectedItem(sub.id)}
+                      sx={{ pl: 4 }}
+                    >
+                      <ListItemText
+                        primary={sub.name}
+                        primaryTypographyProps={{
+                          fontSize: '0.875rem',
+                        }}
+                      />
+                    </ListItemButton>
+                  ))}
                 </List>
               </Collapse>
-            </React.Fragment>
-          ))}
-        </List>
-      </Box>
+            )}
+          </React.Fragment>
+        ))}
+      </List>
 
-      <Box 
-        sx={{ 
+      {/* Footer */}
+      <Box
+        sx={{
           p: 2,
           borderTop: '1px solid',
           borderColor: 'divider',
@@ -204,22 +236,48 @@ export default function Sidebar({ onClose }: SidebarProps) {
           gap: 2,
         }}
       >
-        <Avatar 
-          sx={{ 
-            bgcolor: 'primary.main',
-            width: 32,
-            height: 32,
-          }}
-        >
-          U
-        </Avatar>
-        <Box>
-          <Typography variant="subtitle2">Učenik</Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            user@email.com
-          </Typography>
-        </Box>
+        {!isCollapsed && (
+          <Avatar
+            alt="User"
+            src="/user-avatar.png"
+            sx={{ width: 32, height: 32 }}
+          />
+        )}
+        {!isCollapsed ? (
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle2" noWrap>
+              Učenik
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              user@email.com
+            </Typography>
+          </Box>
+        ) : (
+          <Tooltip title="Učenik" placement="right">
+            <Avatar
+              alt="User"
+              src="/user-avatar.png"
+              sx={{ width: 32, height: 32 }}
+            />
+          </Tooltip>
+        )}
+        {!isCollapsed && (
+          <>
+            <Tooltip title="Obaveštenja">
+              <IconButton size="small">
+                <Badge badgeContent={3} color="primary">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Podešavanja">
+              <IconButton size="small">
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
       </Box>
-    </Paper>
+    </Drawer>
   );
 }

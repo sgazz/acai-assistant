@@ -248,7 +248,8 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
     const groups: MessageGroup[] = [];
     let currentDate = '';
     
-    const messagesToGroup = searchQuery ? filteredMessages : messages;
+    // Sortiramo poruke po timestamp-u od najstarije ka najnovijoj
+    const messagesToGroup = (searchQuery ? filteredMessages : messages).slice().sort((a, b) => a.timestamp - b.timestamp);
     
     messagesToGroup.forEach(message => {
       const date = new Date(message.timestamp).toLocaleDateString('sr-RS', {
@@ -292,12 +293,16 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!initialLoading) {
+      scrollToBottom();
+    }
+  }, [messages.length, filteredMessages.length, searchQuery, initialLoading]);
 
   useEffect(() => {
     if (typeof activeTab !== 'undefined' && activeTab === 0) {
-      scrollToBottom();
+      setTimeout(() => {
+        scrollToBottom();
+      }, 50);
     }
   }, [activeTab]);
 

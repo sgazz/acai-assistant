@@ -23,7 +23,7 @@ export default function ChatInput() {
   const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { sendMessage, state: { isTyping } } = useChatContext();
+  const { sendMessage, state: { isTyping, isLoading }, stopGenerating } = useChatContext();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -120,6 +120,16 @@ export default function ChatInput() {
                 },
                 endAdornment: (
                   <Box sx={{ display: 'flex', gap: 1 }}>
+                    {isLoading && (
+                      <Tooltip title="Prekini generisanje">
+                        <IconButton
+                          color="error"
+                          onClick={stopGenerating}
+                        >
+                          <StopIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <Tooltip title={isRecording ? 'Zaustavi snimanje' : 'Glasovna poruka'}>
                       <IconButton
                         color={isRecording ? 'error' : 'primary'}

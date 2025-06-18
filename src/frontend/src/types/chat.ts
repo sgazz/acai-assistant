@@ -54,4 +54,5 @@ export interface ChatContextType {
   clearChat: () => void;
   updateMessage: (messageId: number, newContent: string) => void;
   setEditMessageId: (messageId: number | null) => void;
+  stopGenerating: () => void;
 } 

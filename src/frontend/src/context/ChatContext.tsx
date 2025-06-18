@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 import { ChatState, ChatContextType, Message } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { sendChatMessage, fetchMessages, saveMessage } from '../lib/api';
@@ -21,7 +21,8 @@ type ChatAction =
   | { type: 'CLEAR_CHAT' }
   | { type: 'UPDATE_MESSAGE'; payload: { messageId: number; content: string } }
   | { type: 'SET_EDIT_MESSAGE_ID'; payload: number | null }
-  | { type: 'SET_TYPING'; payload: boolean };
+  | { type: 'SET_TYPING'; payload: boolean }
+  | { type: 'STOP_GENERATING' };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -68,6 +69,12 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...state,
         isTyping: action.payload,
       };
+    case 'STOP_GENERATING':
+      return {
+        ...state,
+        isLoading: false,
+        isTyping: false,
+      };
     default:
       return state;
   }
@@ -77,6 +84,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -97,6 +105,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendMessage = async (content: string) => {
+    // Abort any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+    
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -159,13 +175,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SEND_MESSAGE', payload: formattedAssistantMessage });
       }
     } catch (error) {
-      dispatch({ 
-        type: 'SET_ERROR', 
-        payload: error instanceof Error ? error.message : 'Greška pri slanju poruke.' 
-      });
+      if (error instanceof Error && error.name === 'AbortError') {
+        dispatch({ type: 'SET_ERROR', payload: 'Generisanje odgovora je prekinuto.' });
+      } else {
+        dispatch({ 
+          type: 'SET_ERROR', 
+          payload: error instanceof Error ? error.message : 'Greška pri slanju poruke.' 
+        });
+      }
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
       dispatch({ type: 'SET_TYPING', payload: false });
+      abortControllerRef.current = null;
     }
   };
 
@@ -187,8 +208,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const stopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    dispatch({ type: 'STOP_GENERATING' });
+  };
+
   return (
-    <ChatContext.Provider value={{ state, sendMessage, clearChat, updateMessage, setEditMessageId }}>
+    <ChatContext.Provider value={{ 
+      state, 
+      sendMessage, 
+      clearChat, 
+      updateMessage, 
+      setEditMessageId,
+      stopGenerating 
+    }}>
       {children}
     </ChatContext.Provider>
   );

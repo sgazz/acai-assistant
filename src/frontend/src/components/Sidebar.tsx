@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -32,8 +32,11 @@ import {
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
   Search as SearchIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useChatContext } from '../context/ChatContext';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 72;
@@ -100,6 +103,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState('chat');
   const { state: { searchQuery }, setSearchQuery } = useChatContext();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (isMobile && isCollapsed) {
+      setIsCollapsed(false);
+    }
+  }, [isMobile]);
 
   const handleCategoryClick = (categoryId: string) => {
     if (categories.find(cat => cat.id === categoryId)?.subCategories) {
@@ -120,46 +132,30 @@ export default function Sidebar({ onClose }: SidebarProps) {
   };
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: isCollapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: isCollapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
-          boxSizing: 'border-box',
-          bgcolor: 'background.paper',
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          transition: theme => theme.transitions.create(['width'], {
-            duration: theme.transitions.duration.standard,
-          }),
-        },
-      }}
-    >
+    <>
       {/* Header */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: isCollapsed ? 'center' : 'space-between',
+          justifyContent: isCollapsed && !isMobile ? 'center' : 'space-between',
           p: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
       >
-        {!isCollapsed && (
+        {!isCollapsed && !isMobile && (
           <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
             ACAI Assistant
           </Typography>
         )}
-        <IconButton onClick={toggleCollapse}>
+        <IconButton onClick={toggleCollapse} sx={{ display: isMobile ? 'none' : 'inline-flex' }}>
           {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         </IconButton>
       </Box>
 
       {/* Search Bar */}
-      {!isCollapsed && (
+      {(!isCollapsed || isMobile) && (
         <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
           <TextField
             fullWidth
@@ -210,7 +206,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     category.icon
                   )}
                 </ListItemIcon>
-                {!isCollapsed && (
+                {(!isCollapsed || isMobile) && (
                   <>
                     <ListItemText primary={category.name} />
                     {category.subCategories && (
@@ -232,7 +228,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 )}
               </ListItemButton>
             </ListItem>
-            {!isCollapsed && category.subCategories && (
+            {(!isCollapsed || isMobile) && category.subCategories && (
               <Collapse in={expandedCategory === category.id}>
                 <List disablePadding>
                   {category.subCategories.map((sub) => (
@@ -268,14 +264,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
           gap: 2,
         }}
       >
-        {!isCollapsed && (
+        {(!isCollapsed || isMobile) && (
           <Avatar
             alt="User"
             src="/user-avatar.png"
             sx={{ width: 32, height: 32 }}
           />
         )}
-        {!isCollapsed ? (
+        {(!isCollapsed || isMobile) ? (
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle2" noWrap>
               Učenik
@@ -293,7 +289,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
             />
           </Tooltip>
         )}
-        {!isCollapsed && (
+        {(!isCollapsed || isMobile) && (
           <>
             <Tooltip title="Obaveštenja">
               <IconButton size="small">
@@ -310,6 +306,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
           </>
         )}
       </Box>
-    </Drawer>
+    </>
   );
 }

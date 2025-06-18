@@ -431,15 +431,15 @@ export default function DocumentList() {
                   </ListItemIcon>
                   <ListItemText
                     primary={
-                      <Typography variant="body1">
+                      <Box component="span">
                         {highlightText(doc.filename, search)}
-                      </Typography>
+                      </Box>
                     }
                     secondary={
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
+                        <Box component="span" color="text.secondary">
                           {new Date(doc.created_at).toLocaleDateString('sr-RS')}
-                        </Typography>
+                        </Box>
                         <Chip
                           label={doc.file_type}
                           size="small"

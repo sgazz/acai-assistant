@@ -343,8 +343,10 @@ export default function ChatWindow() {
         key={`message-${message.id}-${index}`}
         sx={{
           display: 'flex',
-          justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+          flexDirection: 'column',
+          alignItems: message.sender === 'user' ? 'flex-end' : 'flex-start',
           mb: 2,
+          width: '100%',
         }}
       >
         <motion.div
@@ -356,189 +358,162 @@ export default function ChatWindow() {
             damping: 20,
             duration: 0.3
           }}
+          style={{ 
+            maxWidth: '75%',
+            minWidth: '200px'
+          }}
         >
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            style={{ maxWidth: '80%', width: 'fit-content' }}
-          >
-            <Paper
-              elevation={theme.palette.mode === 'dark' ? 2 : 0}
-              sx={{
-                p: 2,
-                bgcolor: isUser 
-                  ? theme.palette.mode === 'dark' 
-                    ? 'primary.dark'
-                    : 'primary.main'
-                  : theme.palette.mode === 'dark'
-                    ? 'background.paper'
-                    : 'grey.50',
-                color: isUser ? 'primary.contrastText' : 'text.primary',
-                borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                border: '1px solid',
-                borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'divider',
+          <Paper
+            elevation={theme.palette.mode === 'dark' ? 2 : 0}
+            sx={{
+              p: 2,
+              width: '100%',
+              bgcolor: isUser 
+                ? theme.palette.mode === 'dark' 
+                  ? 'primary.dark'
+                  : 'primary.main'
+                : theme.palette.mode === 'dark'
+                  ? 'background.paper'
+                  : 'grey.50',
+              color: isUser ? 'primary.contrastText' : 'text.primary',
+              borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              border: '1px solid',
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'divider',
+              boxShadow: theme.palette.mode === 'dark' 
+                ? '0 2px 8px rgba(0,0,0,0.2)'
+                : '0 2px 4px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 2px 8px rgba(0,0,0,0.2)'
-                  : '0 2px 4px rgba(0,0,0,0.05)',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  boxShadow: theme.palette.mode === 'dark' 
-                    ? '0 4px 12px rgba(0,0,0,0.3)'
-                    : '0 4px 8px rgba(0,0,0,0.1)',
-                },
-                position: 'relative',
+                  ? '0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 8px rgba(0,0,0,0.1)',
+              },
+            }}
+          >
+            <Box sx={{ 
+              mb: 2,
+              wordBreak: 'break-word',
+              '& p': {
+                margin: 0,
+                lineHeight: 1.5,
+              }
+            }}>
+              {isEditing ? (
+                <TextField
+                  fullWidth
+                  multiline
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  autoFocus
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      color: isUser ? 'primary.contrastText' : 'text.primary',
+                    },
+                  }}
+                />
+              ) : (
+                <Box>
+                  <ReactMarkdown
+                    components={{
+                      h1: ({node, ...props}) => <Typography variant="h5" fontWeight={700} gutterBottom {...props} />,
+                      h2: ({node, ...props}) => <Typography variant="h6" fontWeight={700} gutterBottom {...props} />,
+                      h3: ({node, ...props}) => <Typography variant="subtitle1" fontWeight={600} gutterBottom {...props} />,
+                      ul: ({node, ...props}) => <Box component="ul" sx={{ pl: 3, mb: 1 }} {...props} />,
+                      ol: ({node, ...props}) => <Box component="ol" sx={{ pl: 3, mb: 1 }} {...props} />,
+                      li: ({node, ...props}) => <li style={{ marginBottom: 4 }}>{props.children}</li>,
+                      a: ({node, ...props}) => <a style={{ color: '#1976d2', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />,
+                      code({ node, inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return !inline && match ? (
+                          <CodeBlock
+                            language={match[1]}
+                            value={String(children).replace(/\n$/, '')}
+                          />
+                        ) : (
+                          <Box
+                            component="code"
+                            sx={{
+                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'grey.100',
+                              color: theme.palette.mode === 'dark' ? 'primary.light' : 'secondary.dark',
+                              px: 0.7,
+                              py: 0.2,
+                              borderRadius: 1,
+                              fontSize: 14,
+                              fontFamily: 'monospace'
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </Box>
+                        );
+                      },
+                      blockquote: ({node, ...props}) => <Box component="blockquote" sx={{ borderLeft: '4px solid #1976d2', pl: 2, color: 'grey.700', fontStyle: 'italic', my: 1 }} {...props} />,
+                      p: ({node, ...props}) => <Typography variant="body1" sx={{ mb: 1, whiteSpace: 'pre-line' }} {...props} />,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </Box>
+              )}
+            </Box>
+
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: 1,
+                mt: 1,
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.1)',
               }}
             >
-              <Box sx={{ mb: 2 }}>
-                {isEditing ? (
-                  <TextField
-                    fullWidth
-                    multiline
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    autoFocus
-                    sx={{
-                      '& .MuiInputBase-input': {
-                        color: isUser ? 'primary.contrastText' : 'text.primary',
-                      },
-                    }}
-                  />
-                ) : (
-                  <Box>
-                    <ReactMarkdown
-                      components={{
-                        h1: ({node, ...props}) => <Typography variant="h5" fontWeight={700} gutterBottom {...props} />,
-                        h2: ({node, ...props}) => <Typography variant="h6" fontWeight={700} gutterBottom {...props} />,
-                        h3: ({node, ...props}) => <Typography variant="subtitle1" fontWeight={600} gutterBottom {...props} />,
-                        ul: ({node, ...props}) => <Box component="ul" sx={{ pl: 3, mb: 1 }} {...props} />,
-                        ol: ({node, ...props}) => <Box component="ol" sx={{ pl: 3, mb: 1 }} {...props} />,
-                        li: ({node, ...props}) => <li style={{ marginBottom: 4 }}>{props.children}</li>,
-                        a: ({node, ...props}) => <a style={{ color: '#1976d2', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer" {...props} />,
-                        code({ node, inline, className, children, ...props }: any) {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return !inline && match ? (
-                            <CodeBlock
-                              language={match[1]}
-                              value={String(children).replace(/\n$/, '')}
-                            />
-                          ) : (
-                            <Box
-                              component="code"
-                              sx={{
-                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'grey.100',
-                                color: theme.palette.mode === 'dark' ? 'primary.light' : 'secondary.dark',
-                                px: 0.7,
-                                py: 0.2,
-                                borderRadius: 1,
-                                fontSize: 14,
-                                fontFamily: 'monospace'
-                              }}
-                              {...props}
-                            >
-                              {children}
-                            </Box>
-                          );
-                        },
-                        blockquote: ({node, ...props}) => <Box component="blockquote" sx={{ borderLeft: '4px solid #1976d2', pl: 2, color: 'grey.700', fontStyle: 'italic', my: 1 }} {...props} />,
-                        p: ({node, ...props}) => <Typography variant="body1" sx={{ mb: 1, whiteSpace: 'pre-line' }} {...props} />,
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  </Box>
-                )}
-              </Box>
-
-              <Box 
+              <Typography 
+                variant="caption" 
                 sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: 1,
-                  mt: 1,
-                  pt: 1,
-                  borderTop: '1px solid',
-                  borderColor: theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.1)' 
-                    : 'rgba(0, 0, 0, 0.1)',
+                  opacity: 0.7,
+                  color: isUser ? 'primary.contrastText' : 'text.secondary'
                 }}
               >
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    opacity: 0.7,
-                    color: isUser ? 'primary.contrastText' : 'text.secondary'
-                  }}
-                >
-                  {new Date(message.timestamp).toLocaleTimeString('sr-RS', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </Typography>
+                {new Date(message.timestamp).toLocaleTimeString('sr-RS', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </Typography>
 
-                {isUser ? (
-                  isEditing ? (
-                    <>
-                      <Tooltip title="Sačuvaj">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSaveEdit(message.id)}
-                          sx={{
-                            color: 'primary.contrastText',
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          <SaveIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Otkaži">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCancelEdit(message.id)}
-                          sx={{
-                            color: 'primary.contrastText',
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </>
-                  ) : (
-                    <>
-                      <Tooltip title="Kopiraj">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCopyMessage(message.id)}
-                          sx={{
-                            color: isUser ? 'primary.contrastText' : 'text.secondary',
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          {isCopied ? (
-                            <CheckIcon fontSize="small" />
-                          ) : (
-                            <ContentCopyIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Izmeni">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleStartEdit(message.id)}
-                          sx={{
-                            color: isUser ? 'primary.contrastText' : 'text.secondary',
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </>
-                  )
+              {isUser ? (
+                isEditing ? (
+                  <>
+                    <Tooltip title="Sačuvaj">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSaveEdit(message.id)}
+                        sx={{
+                          color: 'primary.contrastText',
+                          opacity: 0.7,
+                          '&:hover': { opacity: 1 },
+                        }}
+                      >
+                        <SaveIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Otkaži">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleCancelEdit(message.id)}
+                        sx={{
+                          color: 'primary.contrastText',
+                          opacity: 0.7,
+                          '&:hover': { opacity: 1 },
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
                 ) : (
                   <>
                     <Tooltip title="Kopiraj">
@@ -558,47 +533,87 @@ export default function ChatWindow() {
                         )}
                       </IconButton>
                     </Tooltip>
-                    {message.sources && message.sources.length > 0 && (
-                      <Tooltip title="Prikaži izvore">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleShowSources(message)}
-                          sx={{
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1 },
-                          }}
-                        >
-                          <ArticleIcon fontSize="small" />
-                          <Typography variant="caption" sx={{ ml: 0.5 }}>
-                            {message.sources.length}
-                          </Typography>
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                    <Tooltip title="Izmeni">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleStartEdit(message.id)}
+                        sx={{
+                          color: isUser ? 'primary.contrastText' : 'text.secondary',
+                          opacity: 0.7,
+                          '&:hover': { opacity: 1 },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </>
-                )}
-              </Box>
-            </Paper>
-          </motion.div>
-          
-          {!isUser && (
-            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-              {['like', 'dislike', 'helpful', 'thanks'].map((type) => {
-                const reaction = message.reactions?.find(r => r.type === type as MessageReaction['type']);
-                return (
-                  <ReactionButton
-                    key={type}
-                    messageId={message.id}
-                    type={type as MessageReaction['type']}
-                    count={reaction?.count || 0}
-                    reacted={reaction?.reacted || false}
-                    onReact={() => handleReaction(message.id, type as MessageReaction['type'], reaction?.reacted || false)}
-                  />
-                );
-              })}
+                )
+              ) : (
+                <>
+                  <Tooltip title="Kopiraj">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleCopyMessage(message.id)}
+                      sx={{
+                        color: isUser ? 'primary.contrastText' : 'text.secondary',
+                        opacity: 0.7,
+                        '&:hover': { opacity: 1 },
+                      }}
+                    >
+                      {isCopied ? (
+                        <CheckIcon fontSize="small" />
+                      ) : (
+                        <ContentCopyIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                  {message.sources && message.sources.length > 0 && (
+                    <Tooltip title="Prikaži izvore">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleShowSources(message)}
+                        sx={{
+                          opacity: 0.7,
+                          '&:hover': { opacity: 1 },
+                        }}
+                      >
+                        <ArticleIcon fontSize="small" />
+                        <Typography variant="caption" sx={{ ml: 0.5 }}>
+                          {message.sources.length}
+                        </Typography>
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </>
+              )}
             </Box>
-          )}
+          </Paper>
         </motion.div>
+        
+        {!isUser && (
+          <Box 
+            sx={{ 
+              display: 'flex',
+              gap: 1,
+              mt: 1,
+              ml: 1,
+            }}
+          >
+            {['like', 'dislike', 'helpful', 'thanks'].map((type) => {
+              const reaction = message.reactions?.find(r => r.type === type as MessageReaction['type']);
+              return (
+                <ReactionButton
+                  key={type}
+                  messageId={message.id}
+                  type={type as MessageReaction['type']}
+                  count={reaction?.count || 0}
+                  reacted={reaction?.reacted || false}
+                  onReact={() => handleReaction(message.id, type as MessageReaction['type'], reaction?.reacted || false)}
+                />
+              );
+            })}
+          </Box>
+        )}
       </Box>
     );
   };
@@ -685,23 +700,35 @@ export default function ChatWindow() {
           <MessageSkeleton />
         ) : (
           messageGroups.map((group, groupIndex) => (
-            <Box key={`group-${group.date}-${groupIndex}`} sx={{ mb: 4 }}>
-              <Typography
-                variant="caption"
-                component="div"
-                align="center"
+            <Box key={`group-${group.date}-${groupIndex}`}>
+              <Box
                 sx={{
-                  color: 'text.secondary',
-                  mb: 2,
-                  position: 'sticky',
-                  top: 0,
-                  bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
-                  py: 1,
-                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  my: 3,
+                  px: 2,
                 }}
               >
-                {group.date}
-              </Typography>
+                <Divider sx={{ flex: 1 }} />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    bgcolor: theme.palette.mode === 'dark' 
+                      ? 'rgba(255,255,255,0.05)' 
+                      : 'rgba(0,0,0,0.05)',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  {group.date}
+                </Typography>
+                <Divider sx={{ flex: 1 }} />
+              </Box>
               {group.messages.map((message, index) => renderMessage(message, index))}
             </Box>
           ))

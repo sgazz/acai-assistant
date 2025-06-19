@@ -38,10 +38,16 @@ export default function Home() {
         sx={{
           display: 'flex',
           width: '100%',
-          maxWidth: '1280px',
-          minWidth: 0,
           height: '100%',
           position: 'relative',
+          flex: 1,
+          '@media (min-width: 1280px)': {
+            maxWidth: '1440px',
+            margin: '0 auto',
+          },
+          '@media (min-width: 1920px)': {
+            maxWidth: '1800px',
+          },
         }}
       >
         {isMobile ? (

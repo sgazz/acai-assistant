@@ -57,14 +57,14 @@ export default function ChatInput() {
     <Paper
       elevation={0}
       sx={{
-        p: 2,
+        p: { xs: 1, sm: 2 },
         borderTop: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
       }}
     >
       <form onSubmit={handleSubmit}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 2 } }}>
           <TextField
             multiline
             maxRows={4}
@@ -83,14 +83,17 @@ export default function ChatInput() {
                 '&:hover': {
                   bgcolor: 'action.hover',
                 },
+                fontSize: { xs: 14, sm: 16 },
+                py: { xs: 1, sm: 2 },
               },
               endAdornment: (
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 } }}>
                   {isLoading && (
                     <Tooltip title="Prekini generisanje">
                       <IconButton
                         color="error"
                         onClick={stopGenerating}
+                        size={window.innerWidth < 600 ? 'small' : 'medium'}
                       >
                         <StopIcon />
                       </IconButton>
@@ -100,6 +103,7 @@ export default function ChatInput() {
                     <IconButton
                       color={isRecording ? 'error' : 'primary'}
                       onClick={handleVoiceRecord}
+                      size={window.innerWidth < 600 ? 'small' : 'medium'}
                     >
                       {isRecording ? <StopIcon /> : <MicIcon />}
                     </IconButton>
@@ -114,6 +118,7 @@ export default function ChatInput() {
                         color: 'primary.dark',
                       },
                     }}
+                    size={window.innerWidth < 600 ? 'small' : 'medium'}
                   >
                     <SendIcon />
                   </IconButton>

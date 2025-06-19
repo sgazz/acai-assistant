@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
-import { ChatState, ChatContextType, Message } from '../types/chat';
+import { ChatState, ChatContextType, Message, MessageReaction } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { sendChatMessage, fetchMessages, saveMessage } from '../lib/api';
 
@@ -11,6 +11,9 @@ const initialState: ChatState = {
   error: null,
   editMessageId: null,
   isTyping: false,
+  isGenerating: false,
+  searchQuery: '',
+  filteredMessages: [],
 };
 
 type ChatAction =
@@ -22,7 +25,10 @@ type ChatAction =
   | { type: 'UPDATE_MESSAGE'; payload: { messageId: number; content: string } }
   | { type: 'SET_EDIT_MESSAGE_ID'; payload: number | null }
   | { type: 'SET_TYPING'; payload: boolean }
-  | { type: 'STOP_GENERATING' };
+  | { type: 'STOP_GENERATING' }
+  | { type: 'ADD_REACTION'; payload: { messageId: number; type: MessageReaction['type'] } }
+  | { type: 'REMOVE_REACTION'; payload: { messageId: number; type: MessageReaction['type'] } }
+  | { type: 'SET_SEARCH_QUERY'; payload: string };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -75,6 +81,62 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         isLoading: false,
         isTyping: false,
       };
+    case 'ADD_REACTION':
+      return {
+        ...state,
+        messages: state.messages.map(msg =>
+          msg.id === action.payload.messageId
+            ? {
+                ...msg,
+                reactions: [
+                  ...(msg.reactions || []).filter(r => r.type !== action.payload.type),
+                  {
+                    type: action.payload.type,
+                    count: (msg.reactions?.find(r => r.type === action.payload.type)?.count || 0) + 1,
+                    reacted: true
+                  }
+                ]
+              }
+            : msg
+        ),
+      };
+    case 'REMOVE_REACTION':
+      return {
+        ...state,
+        messages: state.messages.map(msg =>
+          msg.id === action.payload.messageId
+            ? {
+                ...msg,
+                reactions: [
+                  ...(msg.reactions || []).filter(r => r.type !== action.payload.type),
+                  {
+                    type: action.payload.type,
+                    count: Math.max((msg.reactions?.find(r => r.type === action.payload.type)?.count || 1) - 1, 0),
+                    reacted: false
+                  }
+                ].filter(r => r.count > 0)
+              }
+            : msg
+        ),
+      };
+    case 'SET_SEARCH_QUERY': {
+      const query = action.payload.toLowerCase();
+      const filtered = query
+        ? state.messages.filter(msg =>
+            msg.content.toLowerCase().includes(query) ||
+            msg.sources?.some(source =>
+              source.content.toLowerCase().includes(query) ||
+              source.filename.toLowerCase().includes(query)
+            )
+          )
+        : state.messages;
+      
+      return {
+        ...state,
+        searchQuery: action.payload,
+        filteredMessages: filtered,
+      };
+    }
     default:
       return state;
   }
@@ -216,15 +278,38 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'STOP_GENERATING' });
   };
 
+  const addReaction = (messageId: number, type: MessageReaction['type']) => {
+    dispatch({
+      type: 'ADD_REACTION',
+      payload: { messageId, type }
+    });
+  };
+
+  const removeReaction = (messageId: number, type: MessageReaction['type']) => {
+    dispatch({
+      type: 'REMOVE_REACTION',
+      payload: { messageId, type }
+    });
+  };
+
+  const setSearchQuery = (query: string) => {
+    dispatch({ type: 'SET_SEARCH_QUERY', payload: query });
+  };
+
   return (
-    <ChatContext.Provider value={{ 
-      state, 
-      sendMessage, 
-      clearChat, 
-      updateMessage, 
-      setEditMessageId,
-      stopGenerating 
-    }}>
+    <ChatContext.Provider
+      value={{
+        state,
+        sendMessage,
+        clearChat,
+        updateMessage,
+        setEditMessageId,
+        stopGenerating,
+        addReaction,
+        removeReaction,
+        setSearchQuery,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

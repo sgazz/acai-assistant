@@ -373,18 +373,19 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
             damping: 20,
             duration: 0.3
           }}
-          style={{ 
-            maxWidth: '75%',
-            minWidth: '200px'
+          style={{
+            maxWidth: '100%',
+            minWidth: 0
           }}
         >
           <Paper
             elevation={theme.palette.mode === 'dark' ? 2 : 0}
             sx={{
-              p: 2,
+              p: { xs: 1, sm: 2 },
               width: '100%',
-              bgcolor: isUser 
-                ? theme.palette.mode === 'dark' 
+              maxWidth: { xs: '95vw', sm: '90vw', md: '85%' },
+              bgcolor: isUser
+                ? theme.palette.mode === 'dark'
                   ? 'primary.dark'
                   : 'primary.main'
                 : theme.palette.mode === 'dark'
@@ -394,12 +395,12 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
               borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               border: '1px solid',
               borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'divider',
-              boxShadow: theme.palette.mode === 'dark' 
+              boxShadow: theme.palette.mode === 'dark'
                 ? '0 2px 8px rgba(0,0,0,0.2)'
                 : '0 2px 4px rgba(0,0,0,0.05)',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                boxShadow: theme.palette.mode === 'dark' 
+                boxShadow: theme.palette.mode === 'dark'
                   ? '0 4px 12px rgba(0,0,0,0.3)'
                   : '0 4px 8px rgba(0,0,0,0.1)',
               },
@@ -410,8 +411,33 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
               wordBreak: 'break-word',
               '& p': {
                 margin: 0,
-                lineHeight: 1.5,
-              }
+                lineHeight: 1.6,
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                letterSpacing: '0.01em',
+              },
+              '& pre': {
+                margin: '1rem 0',
+                padding: '1rem',
+                borderRadius: '8px',
+                overflowX: 'auto',
+              },
+              '& code': {
+                fontSize: { xs: '0.85rem', sm: '0.9rem' },
+              },
+              '& ul, & ol': {
+                margin: '0.5rem 0',
+                paddingLeft: '1.5rem',
+              },
+              '& li': {
+                marginBottom: '0.5rem',
+              },
+              '& blockquote': {
+                margin: '1rem 0',
+                padding: '0.5rem 1rem',
+                borderLeft: '4px solid',
+                borderColor: 'primary.main',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+              },
             }}>
               {isEditing ? (
                 <TextField
@@ -641,12 +667,15 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
         flexDirection: 'column',
         bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
         position: 'relative',
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
       }}
     >
       {searchQuery && (
         <Box
           sx={{
-            p: 2,
+            p: { xs: 1, sm: 2 },
             borderBottom: '1px solid',
             borderColor: 'divider',
             bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.50',
@@ -676,7 +705,7 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
         sx={{
           flex: 1,
           overflowY: 'auto',
-          p: 2,
+          p: { xs: 1, sm: 2 },
           scrollBehavior: 'smooth',
           '&::-webkit-scrollbar': {
             width: '8px',

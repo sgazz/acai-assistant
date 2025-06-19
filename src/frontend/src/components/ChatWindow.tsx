@@ -362,6 +362,7 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
           alignItems: message.sender === 'user' ? 'flex-end' : 'flex-start',
           mb: 2,
           width: '100%',
+          px: { xs: 1, sm: 2, md: 3 }
         }}
       >
         <motion.div
@@ -374,16 +375,20 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
             duration: 0.3
           }}
           style={{
-            maxWidth: '100%',
-            minWidth: 0
+            width: '100%',
+            display: 'flex',
+            justifyContent: isUser ? 'flex-end' : 'flex-start'
           }}
         >
           <Paper
             elevation={theme.palette.mode === 'dark' ? 2 : 0}
             sx={{
-              p: { xs: 1, sm: 2 },
-              width: '100%',
-              maxWidth: { xs: '95vw', sm: '90vw', md: '85%' },
+              p: { xs: 1.5, sm: 2 },
+              width: 'auto',
+              maxWidth: isUser 
+                ? { xs: '85%', sm: '75%', md: '65%' }
+                : { xs: '95%', sm: '85%', md: '75%' },
+              minWidth: isUser ? { xs: '60%', sm: '40%' } : 'auto',
               bgcolor: isUser
                 ? theme.palette.mode === 'dark'
                   ? 'primary.dark'
@@ -394,15 +399,29 @@ export default function ChatWindow({ activeTab }: ChatWindowProps) {
               color: isUser ? 'primary.contrastText' : 'text.primary',
               borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               border: '1px solid',
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'divider',
+              borderColor: theme.palette.mode === 'dark' 
+                ? isUser 
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : 'rgba(255, 255, 255, 0.1)' 
+                : isUser
+                  ? 'primary.main'
+                  : 'divider',
               boxShadow: theme.palette.mode === 'dark'
-                ? '0 2px 8px rgba(0,0,0,0.2)'
-                : '0 2px 4px rgba(0,0,0,0.05)',
+                ? isUser
+                  ? '0 2px 12px rgba(30, 136, 229, 0.2)'
+                  : '0 2px 8px rgba(0,0,0,0.2)'
+                : isUser
+                  ? '0 2px 8px rgba(30, 136, 229, 0.15)'
+                  : '0 2px 4px rgba(0,0,0,0.05)',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 4px 12px rgba(0,0,0,0.3)'
-                  : '0 4px 8px rgba(0,0,0,0.1)',
+                  ? isUser
+                    ? '0 4px 15px rgba(30, 136, 229, 0.3)'
+                    : '0 4px 12px rgba(0,0,0,0.3)'
+                  : isUser
+                    ? '0 4px 12px rgba(30, 136, 229, 0.2)'
+                    : '0 4px 8px rgba(0,0,0,0.1)',
               },
             }}
           >

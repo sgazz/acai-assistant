@@ -25,6 +25,13 @@ var/
 .installed.cfg
 *.egg
 
+# Virtual environments
+venv/
+venv311/
+.venv/
+env/
+ENV/
+
 # Node
 node_modules/
 npm-debug.log*
@@ -42,3 +49,12 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project specific
+data/temp/
+data/rag_index/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
